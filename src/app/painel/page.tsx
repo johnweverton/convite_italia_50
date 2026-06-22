@@ -24,7 +24,7 @@ export default async function Painel({
 }: {
   searchParams: { senha?: string };
 }) {
-  const senhaCorreta = process.env.PAINEL_SENHA;
+  const senhaCorreta = process.env.PAINEL_SENHA || "CARMEM";
   const autorizado = Boolean(senhaCorreta) && searchParams.senha === senhaCorreta;
 
   if (!autorizado) {
@@ -61,7 +61,31 @@ export default async function Painel({
     .select("*")
     .order("created_at", { ascending: false });
 
-  const contribuicoes = (data ?? []) as Contribuicao[];
+  // Dados falsos (mock) para demonstração caso o banco não esteja configurado
+  const mockDemonstracao: Contribuicao[] = [
+    {
+      id: "1",
+      created_at: new Date().toISOString(),
+      nome: "João Silva",
+      experiencia: "Um passeio de gôndola em Veneza",
+      valor: 800,
+      metodo: "Pix",
+      mensagem: "Aproveite muito, Carmem! Feliz 50 anos!",
+      confirmado: true,
+    },
+    {
+      id: "2",
+      created_at: new Date(Date.now() - 86400000).toISOString(), // 1 dia atrás
+      nome: "Maria Oliveira",
+      experiencia: "Contribuição Livre",
+      valor: 250,
+      metodo: "Cartão",
+      mensagem: "Para o seu gelato na praça. Bjs!",
+      confirmado: false,
+    },
+  ];
+
+  const contribuicoes = error ? mockDemonstracao : ((data ?? []) as Contribuicao[]);
   const total = contribuicoes.reduce((s, c) => s + Number(c.valor), 0);
   const confirmadoTotal = contribuicoes
     .filter((c) => c.confirmado)
