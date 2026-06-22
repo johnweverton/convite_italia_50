@@ -18,7 +18,7 @@ type Props = {
 type Metodo = "pix" | "cartao";
 type Fase = "escolha" | "enviando" | "concluido";
 
-const PIX_CHAVE = process.env.NEXT_PUBLIC_PIX_CHAVE ?? "";
+const PIX_CHAVE = process.env.NEXT_PUBLIC_PIX_CHAVE ?? "+5585997180005";
 const PIX_NOME = process.env.NEXT_PUBLIC_PIX_NOME ?? "Carmem Glisse Cavalcante";
 const PIX_CIDADE = process.env.NEXT_PUBLIC_PIX_CIDADE ?? "FORTALEZA";
 const LINK_CARTAO = process.env.NEXT_PUBLIC_LINK_CARTAO ?? "";
