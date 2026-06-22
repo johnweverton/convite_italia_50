@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: theme("colors.creme");
+  color: theme("colors.sepia");
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Vinheta sutil sobre seções de imagem */
+.vinheta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 55%,
+    rgba(46, 34, 24, 0.45) 100%
+  );
+}
+
+/* Filete dourado decorativo */
+.filete-ouro {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    theme("colors.dourado"),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Ocultar spinners do input[number] nos cards de contribuição */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
