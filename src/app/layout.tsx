@@ -42,11 +42,11 @@ const romanPrideScript = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Carmem na Itália 2026 · 50 Anos",
+  title: "Festa di 50 Anni",
   description:
     "A vida é feita de ciclos. E alguns merecem ser celebrados com grandeza. Participe do próximo capítulo: a Itália.",
   openGraph: {
-    title: "Carmem na Itália 2026 · 50 Anos",
+    title: "Festa di 50 Anni",
     description:
       "Algumas experiências que farão parte dessa jornada. Sua presença é o maior presente.",
     type: "website",
