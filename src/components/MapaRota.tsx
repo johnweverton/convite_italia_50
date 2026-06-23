@@ -20,11 +20,11 @@ function tocarSomPergaminho() {
     const ctx = new AudioContext();
 
     // Ruído branco filtrado — simula atrito de papel
-    const tamanho = ctx.sampleRate * 2; // 2 segundos
+    const tamanho = ctx.sampleRate * 3; // 3 segundos
     const buffer = ctx.createBuffer(1, tamanho, ctx.sampleRate);
     const dados = buffer.getChannelData(0);
     for (let i = 0; i < tamanho; i++) {
-      dados[i] = (Math.random() * 2 - 1) * 0.3;
+      dados[i] = (Math.random() * 2 - 1) * 0.6;
     }
 
     const fonte = ctx.createBufferSource();
@@ -33,15 +33,15 @@ function tocarSomPergaminho() {
     // Filtro passa-baixa para ficar mais "papeludo"
     const filtro = ctx.createBiquadFilter();
     filtro.type = "lowpass";
-    filtro.frequency.setValueAtTime(800, ctx.currentTime);
-    filtro.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 1.8);
+    filtro.frequency.setValueAtTime(1200, ctx.currentTime);
+    filtro.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 2.5);
 
     // Envelope de volume — cresce e some
     const ganho = ctx.createGain();
     ganho.gain.setValueAtTime(0, ctx.currentTime);
-    ganho.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.15);
-    ganho.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 1.0);
-    ganho.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.0);
+    ganho.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.2);
+    ganho.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 1.5);
+    ganho.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.8);
 
     fonte.connect(filtro);
     filtro.connect(ganho);

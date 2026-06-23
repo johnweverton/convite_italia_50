@@ -13,31 +13,21 @@ import { Music, VolumeX } from "lucide-react";
  */
 export default function MusicaAmbiente() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [tocando, setTocando] = useState(false);
   const [mutado, setMutado] = useState(false);
-
-  // Função para iniciar a música
-  const iniciar = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio || tocando) return;
-    audio.play().then(() => setTocando(true)).catch(() => {});
-  }, [tocando]);
 
   useEffect(() => {
     const audio = new Audio("/audio/musica-baixada.m4a");
     audio.loop = true;
-    audio.volume = 0.15; // volume suave
+    audio.volume = 0.05;
     audio.preload = "auto";
     audioRef.current = audio;
 
     // Tenta autoplay imediato
-    audio.play().then(() => {
-      setTocando(true);
-    }).catch(() => {
+    audio.play().catch(() => {
       // Navegador bloqueou autoplay — escuta a primeira interação
       const eventos = ["scroll", "click", "touchstart", "keydown"];
       const handler = () => {
-        audio.play().then(() => setTocando(true)).catch(() => {});
+        audio.play().catch(() => {});
         eventos.forEach((e) => window.removeEventListener(e, handler));
       };
       eventos.forEach((e) => window.addEventListener(e, handler, { once: false, passive: true }));
@@ -47,23 +37,20 @@ export default function MusicaAmbiente() {
       audio.pause();
       audio.src = "";
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const alternarMute = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (mutado) {
-      audio.volume = 0.15;
+    if (audio.muted) {
+      audio.muted = false;
       setMutado(false);
-      if (!tocando) {
-        audio.play().then(() => setTocando(true)).catch(() => {});
-      }
     } else {
-      audio.volume = 0;
+      audio.muted = true;
       setMutado(true);
     }
-  }, [mutado, tocando]);
+  }, []);
 
   return (
     <motion.button
