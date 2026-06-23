@@ -6,93 +6,58 @@ import { Music, VolumeX } from "lucide-react";
 
 /**
  * Player de música ambiente flutuante.
- * Usa Web Audio API para contornar o bloqueio de volume do iOS
- * (iOS Safari ignora audio.volume).
+ * Tenta tocar automaticamente ao carregar a página. Se o navegador
+ * bloquear (política de autoplay), escuta a primeira interação do
+ * usuário (scroll, toque, clique) e inicia nesse momento.
  */
 export default function MusicaAmbiente() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const [mutado, setMutado] = useState(false);
   const [tocando, setTocando] = useState(false);
 
   useEffect(() => {
     const audio = new Audio("/audio/musica-baixada.m4a");
     audio.loop = true;
+    audio.volume = 0.05; // 5% de volume (ignorado no iOS, funciona em Android/PC)
     audio.preload = "auto";
-    audio.crossOrigin = "anonymous";
     audioRef.current = audio;
 
-    let gainNode: GainNode | null = null;
-    let sourceNode: MediaElementAudioSourceNode | null = null;
-
-    const setupWebAudio = () => {
-      if (!audioCtxRef.current) {
-        const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-        const ctx = new AudioContext();
-        audioCtxRef.current = ctx;
-
-        sourceNode = ctx.createMediaElementSource(audio);
-        gainNode = ctx.createGain();
-        gainNode.gain.value = 0.05; // 5% real de volume, funciona no iOS
-
-        sourceNode.connect(gainNode);
-        gainNode.connect(ctx.destination);
-      }
-      if (audioCtxRef.current.state === "suspended") {
-        audioCtxRef.current.resume();
-      }
-    };
-
     // Tenta autoplay imediato
-    const tentarPlay = async () => {
-      try {
-        setupWebAudio();
-        await audio.play();
-        setTocando(true);
-      } catch (err) {
-        // Bloqueado pelo navegador — espera interação do usuário
-        const eventos = ["click", "touchstart", "scroll", "keydown"];
-        const handler = async () => {
-          try {
-            setupWebAudio();
-            await audio.play();
-            setTocando(true);
-            eventos.forEach((e) => window.removeEventListener(e, handler));
-          } catch (e) {}
-        };
-        eventos.forEach((e) => window.addEventListener(e, handler, { once: false, passive: true }));
-      }
-    };
-
-    tentarPlay();
+    audio.play().then(() => {
+      setTocando(true);
+    }).catch(() => {
+      // Navegador bloqueou autoplay — escuta a primeira interação
+      const eventos = ["scroll", "click", "touchstart", "keydown"];
+      const handler = () => {
+        audio.play().then(() => setTocando(true)).catch(() => {});
+        eventos.forEach((e) => window.removeEventListener(e, handler));
+      };
+      eventos.forEach((e) => window.addEventListener(e, handler, { once: false, passive: true }));
+    });
 
     return () => {
       audio.pause();
       audio.src = "";
-      if (audioCtxRef.current) {
-        audioCtxRef.current.close();
-      }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const alternarMute = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    if (mutado) {
-      if (audioCtxRef.current?.state === "suspended") {
-        audioCtxRef.current.resume();
-      }
+    if (audio.muted || audio.paused) {
+      audio.muted = false;
+      audio.volume = 0.05;
       audio.play().then(() => {
         setMutado(false);
         setTocando(true);
       }).catch(() => {});
     } else {
-      audio.pause();
+      audio.pause(); // Pausamos em vez de mutar para garantir no iOS
       setMutado(true);
       setTocando(false);
     }
-  }, [mutado]);
+  }, []);
 
   return (
     <motion.button
@@ -105,7 +70,7 @@ export default function MusicaAmbiente() {
       className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-dourado/30 bg-sepia/80 text-creme shadow-[0_4px_24px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-colors hover:bg-sepia"
     >
       <AnimatePresence mode="wait">
-        {!mutado ? (
+        {!mutado && tocando ? (
           <motion.span
             key="on"
             initial={{ scale: 0, rotate: -90 }}
