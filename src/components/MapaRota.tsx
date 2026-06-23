@@ -19,6 +19,19 @@ export default function MapaRota() {
   const [ativa, setAtiva] = useState<number | null>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
   const emView = useInView(mapaRef, { once: true, amount: 0.3 });
+  const somTocado = useRef(false);
+
+  useEffect(() => {
+    if (emView && !somTocado.current && !reduzido) {
+      somTocado.current = true;
+      // Delay de 0.3s (300ms) para sincronizar perfeitamente com o início do desdobramento
+      setTimeout(() => {
+        const audio = new Audio("/audio/efeito-sonoro.m4a");
+        audio.volume = 0.8;
+        audio.play().catch(() => {});
+      }, 300);
+    }
+  }, [emView, reduzido]);
 
   const rota = EXPERIENCIAS_FIXAS.map((e) => e.mapa);
   const rotaPath = rota

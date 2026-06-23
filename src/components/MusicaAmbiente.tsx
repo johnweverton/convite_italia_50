@@ -16,9 +16,9 @@ export default function MusicaAmbiente() {
   const [tocando, setTocando] = useState(false);
 
   useEffect(() => {
-    const audio = new Audio("/audio/musica-baixada.m4a");
+    const audio = new Audio("/audio/musica-ajustada.mp3");
     audio.loop = true;
-    audio.volume = 0.05; // 5% de volume (ignorado no iOS, funciona em Android/PC)
+    audio.volume = 1.0; // O arquivo já tem o volume reduzido
     audio.preload = "auto";
     audioRef.current = audio;
 
