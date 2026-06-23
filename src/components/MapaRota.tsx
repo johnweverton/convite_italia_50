@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useInView } from "framer-motion";
 import { EXPERIENCIAS_FIXAS } from "@/lib/experiencias";
 
