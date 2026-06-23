@@ -1,22 +1,75 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, useInView } from "framer-motion";
 import { EXPERIENCIAS_FIXAS } from "@/lib/experiencias";
 
 /**
  * Mapa antigo da Itália (carta de 1706) que se desdobra em 3D.
  * Legenda interativa: ao clicar numa cidade, aparece um painel ao lado
  * do mapa com uma breve descrição daquela parada.
+ * Efeito sonoro de pergaminho abrindo sincronizado com a animação.
  */
 
 const MAPA = "/cenas/mapa-italia.jpg";
 const N = 4;
 
+/** Gera som de pergaminho/papel abrindo via Web Audio API */
+function tocarSomPergaminho() {
+  try {
+    const ctx = new AudioContext();
+
+    // Ruído branco filtrado — simula atrito de papel
+    const tamanho = ctx.sampleRate * 2; // 2 segundos
+    const buffer = ctx.createBuffer(1, tamanho, ctx.sampleRate);
+    const dados = buffer.getChannelData(0);
+    for (let i = 0; i < tamanho; i++) {
+      dados[i] = (Math.random() * 2 - 1) * 0.3;
+    }
+
+    const fonte = ctx.createBufferSource();
+    fonte.buffer = buffer;
+
+    // Filtro passa-baixa para ficar mais "papeludo"
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = "lowpass";
+    filtro.frequency.setValueAtTime(800, ctx.currentTime);
+    filtro.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 1.8);
+
+    // Envelope de volume — cresce e some
+    const ganho = ctx.createGain();
+    ganho.gain.setValueAtTime(0, ctx.currentTime);
+    ganho.gain.linearRampToValueAtTime(0.08, ctx.currentTime + 0.15);
+    ganho.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 1.0);
+    ganho.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.0);
+
+    fonte.connect(filtro);
+    filtro.connect(ganho);
+    ganho.connect(ctx.destination);
+
+    fonte.start();
+    fonte.onended = () => ctx.close();
+  } catch {
+    // Navegador sem Web Audio — ignora silenciosamente
+  }
+}
+
 export default function MapaRota() {
   const reduzido = useReducedMotion() ?? false;
   const aberturaFim = 0.3 + N * 0.22;
   const [ativa, setAtiva] = useState<number | null>(null);
+  const mapaRef = useRef<HTMLDivElement>(null);
+  const somTocado = useRef(false);
+  const emView = useInView(mapaRef, { once: true, amount: 0.3 });
+
+  // Toca o som do pergaminho quando o mapa entra na tela
+  useEffect(() => {
+    if (emView && !somTocado.current && !reduzido) {
+      somTocado.current = true;
+      // Delay de 0.3s para sincronizar com a abertura dos painéis
+      setTimeout(() => tocarSomPergaminho(), 300);
+    }
+  }, [emView, reduzido]);
 
   const rota = EXPERIENCIAS_FIXAS.map((e) => e.mapa);
   const rotaPath = rota
@@ -40,7 +93,7 @@ export default function MapaRota() {
       </div>
 
       {/* Mapa + painel lateral */}
-      <div className="mx-auto flex max-w-5xl flex-col items-start gap-8 lg:flex-row">
+      <div ref={mapaRef} className="mx-auto flex max-w-5xl flex-col items-start gap-8 lg:flex-row">
         {/* Pergaminho que se desdobra */}
         <motion.div
           initial={{ opacity: 0, rotateX: reduzido ? 0 : -18, y: 24 }}
