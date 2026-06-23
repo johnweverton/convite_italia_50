@@ -3,10 +3,12 @@ import Convite from "@/components/Convite";
 import Interludio from "@/components/Interludio";
 import MapaRota from "@/components/MapaRota";
 import Presentes from "@/components/Presentes";
+import MusicaAmbiente from "@/components/MusicaAmbiente";
 
 export default function Home() {
   return (
     <main>
+      <MusicaAmbiente />
       <Hero />
       <Convite />
 
