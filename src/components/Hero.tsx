@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 
@@ -9,6 +10,22 @@ import { ChevronDown } from "lucide-react";
  */
 export default function Hero() {
   const reduzido = useReducedMotion() ?? false;
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Força o play no iOS quando volta pro site (evita o botão de play no meio da tela)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    if (videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, []);
+
   const desfoque = (delay: number) =>
     reduzido
       ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.6, delay } }
@@ -21,7 +38,8 @@ export default function Hero() {
   return (
     <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden bg-sepia text-creme">
       <video
-        className="absolute inset-0 h-full w-full object-cover"
+        ref={videoRef}
+        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
         loop
