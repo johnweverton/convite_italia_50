@@ -24,8 +24,8 @@ export default async function Painel({
 }: {
   searchParams: { senha?: string };
 }) {
-  const senhaCorreta = process.env.PAINEL_SENHA || "CARMEM";
-  const autorizado = Boolean(senhaCorreta) && searchParams.senha === senhaCorreta;
+  const senhaCorreta = "CARMEM"; // Forçado temporariamente
+  const autorizado = searchParams.senha === senhaCorreta;
 
   if (!autorizado) {
     return (
