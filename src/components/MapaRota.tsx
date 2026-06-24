@@ -18,18 +18,17 @@ export default function MapaRota() {
   const aberturaFim = 0.3 + N * 0.22;
   const [ativa, setAtiva] = useState<number | null>(null);
   const mapaRef = useRef<HTMLDivElement>(null);
+  const audioMapaRef = useRef<HTMLAudioElement>(null);
   const emView = useInView(mapaRef, { once: true, amount: 0.3 });
   const somTocado = useRef(false);
 
   useEffect(() => {
     if (emView && !somTocado.current && !reduzido) {
       somTocado.current = true;
-      // Delay de 0.3s (300ms) para sincronizar perfeitamente com o início do desdobramento
-      setTimeout(() => {
-        const audio = new Audio("/audio/efeito-sonoro.m4a");
-        audio.volume = 0.8;
-        audio.play().catch(() => {});
-      }, 300);
+      if (audioMapaRef.current) {
+        audioMapaRef.current.volume = 1.0;
+        audioMapaRef.current.play().catch(() => {});
+      }
     }
   }, [emView, reduzido]);
 
@@ -45,6 +44,8 @@ export default function MapaRota() {
       className="relative bg-sepia px-6 py-24 sm:py-32"
       style={{ perspective: 1700 }}
     >
+      <audio ref={audioMapaRef} src="/audio/efeito-sonoro.m4a" preload="auto" />
+      
       <div className="mx-auto mb-12 max-w-3xl text-center text-creme">
         <p className="font-sans text-xs uppercase tracking-[0.35em] text-dourado">
           L&rsquo;itinerario
