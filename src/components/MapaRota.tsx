@@ -26,9 +26,17 @@ export default function MapaRota() {
     // Destrava o áudio no iOS no primeiro toque do usuário
     const unlockAudio = () => {
       if (audioMapaRef.current) {
-        audioMapaRef.current.play().then(() => {
-          audioMapaRef.current?.pause();
-        }).catch(() => {});
+        audioMapaRef.current.muted = true;
+        const playPromise = audioMapaRef.current.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            if (audioMapaRef.current) {
+              audioMapaRef.current.pause();
+              audioMapaRef.current.currentTime = 0;
+              audioMapaRef.current.muted = false;
+            }
+          }).catch(() => {});
+        }
       }
       window.removeEventListener("touchstart", unlockAudio);
       window.removeEventListener("click", unlockAudio);
