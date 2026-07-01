@@ -21,7 +21,7 @@ type Fase = "escolha" | "enviando" | "concluido";
 const PIX_CHAVE = process.env.NEXT_PUBLIC_PIX_CHAVE ?? "+5585997180005";
 const PIX_NOME = process.env.NEXT_PUBLIC_PIX_NOME ?? "Carmem Glisse Cavalcante";
 const PIX_CIDADE = process.env.NEXT_PUBLIC_PIX_CIDADE ?? "FORTALEZA";
-const LINK_CARTAO = process.env.NEXT_PUBLIC_LINK_CARTAO ?? "";
+const LINK_CARTAO = process.env.NEXT_PUBLIC_LINK_CARTAO ?? "https://link.mercadopago.com.br/presentecarmem";
 
 export default function Pagamento({ aberto, experiencia, valor, onFechar }: Props) {
   const [metodo, setMetodo] = useState<Metodo>("pix");
@@ -265,9 +265,11 @@ export default function Pagamento({ aberto, experiencia, valor, onFechar }: Prop
                         Configure o link de pagamento em NEXT_PUBLIC_LINK_CARTAO.
                       </p>
                     )}
-                    <p className="mt-3 font-sans text-xs text-sepia/50">
-                      Você será levado a uma página de pagamento segura em uma
-                      nova aba.
+                    <p className="mt-3 font-sans text-sm text-sepia/80">
+                      <strong>Atenção:</strong> Ao abrir a página do Mercado Pago, insira manualmente o valor de <strong>{valor ? formatarBRL(valor) : "seu presente"}</strong>.
+                    </p>
+                    <p className="mt-1 font-sans text-xs text-sepia/50">
+                      Você será levado a um ambiente seguro em uma nova aba.
                     </p>
                   </div>
                 )}
