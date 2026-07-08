@@ -81,7 +81,6 @@ export default function ExperienciaCard({
         loop
         playsInline
         preload="metadata"
-        poster={experiencia.imagem}
       >
         <source src={videoSrc} type="video/mp4" />
       </video>
