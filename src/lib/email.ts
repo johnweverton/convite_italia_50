@@ -124,3 +124,48 @@ export async function enviarEmailAcompanhantes(params: {
     attachments: anexos,
   });
 }
+
+/**
+ * E-mail único enviado após a pessoa preencher o formulário público de RSVP (se for comparecer).
+ * Envia o ingresso principal e os ingressos de todos os acompanhantes num só e-mail.
+ */
+export async function enviarEmailRsvpPublico(params: {
+  para: string;
+  nomePrincipal: string;
+  ingressos: Ingresso[];
+}) {
+  const { para, nomePrincipal, ingressos } = params;
+  const resend = getResendClient();
+
+  const anexos = await Promise.all(
+    ingressos.map((ingresso, i) => anexoDoIngresso(ingresso, `ingresso-${i}`)),
+  );
+  
+  const blocos = ingressos
+    .map((ingresso, i) => blocoIngresso(ingresso.nome, `ingresso-${i}`))
+    .join("");
+
+  const textoAcompanhantes = ingressos.length > 1
+    ? `<p style="text-align:center;font-size:15px;line-height:1.6;">
+        Seguem abaixo os seus ingressos e os de quem vai com você. 
+        Cada QR code é individual e intransferível — o ideal é encaminhar cada um para a respectiva pessoa apresentar na entrada.
+       </p>`
+    : `<p style="text-align:center;font-size:15px;line-height:1.6;">
+        Segue abaixo o seu ingresso. Ele é individual e intransferível — apresente o QR code na entrada.
+       </p>`;
+
+  return resend.emails.send({
+    from: getRemetente(),
+    to: para,
+    subject: "Seu ingresso confirmado — Carmem na Itália 2026",
+    html: `
+      <div style="font-family:Georgia,serif;max-width:480px;margin:0 auto;color:#3d2f1f;">
+        <h1 style="font-size:22px;text-align:center;">Que alegria, ${nomePrincipal.split(" ")[0]}!</h1>
+        <h2 style="font-size:18px;text-align:center;font-weight:normal;color:#8a7a63;">Presença confirmada.</h2>
+        ${textoAcompanhantes}
+        ${blocos}
+      </div>
+    `,
+    attachments: anexos,
+  });
+}

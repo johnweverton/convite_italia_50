@@ -49,3 +49,30 @@ export const ConfirmacaoSchema = z.object({
 });
 
 export type ConfirmacaoInput = z.infer<typeof ConfirmacaoSchema>;
+
+/** Validação do formulário público de confirmação de presença (RSVP). */
+export const RsvpPublicoSchema = z.object({
+  nome: z
+    .string()
+    .trim()
+    .min(2, "Diga seu nome completo.")
+    .max(120, "Nome muito longo."),
+  email: z.string().trim().email("E-mail inválido."),
+  presenca: z.boolean({ required_error: "Informe se você irá comparecer." }),
+  acompanhantes: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(2, "Nome muito curto.")
+        .max(120, "Nome muito longo.")
+    )
+    .max(5, "No máximo 5 acompanhantes.")
+    .default([]),
+  restricao_alimentar: z
+    .array(z.string().trim())
+    .default([]),
+  mensagem: z.string().trim().max(1000, "Mensagem muito longa.").optional().or(z.literal("")),
+});
+
+export type RsvpPublicoInput = z.infer<typeof RsvpPublicoSchema>;
