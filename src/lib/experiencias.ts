@@ -19,6 +19,8 @@ export type Experiencia = {
   imagem?: string;
   /** Coordenadas relativas (0–100) sobre o SVG do mapa, para o traçado da rota. */
   mapa: { x: number; y: number };
+  /** Link para pagamento com cartão de crédito (Ton). */
+  linkCartao?: string;
 };
 
 export const EXPERIENCIAS: Experiencia[] = [
@@ -33,6 +35,7 @@ export const EXPERIENCIAS: Experiencia[] = [
     atmosfera: "linear-gradient(165deg, #2e2018 0%, #7a4a2e 55%, #b5803f 100%)",
     imagem: "/cenas/roma.jpg",
     mapa: { x: 52, y: 42 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_VyMmOdw6AlQD5Evs0ixX30zWe2nKabop",
   },
   {
     id: "florenca",
@@ -45,6 +48,7 @@ export const EXPERIENCIAS: Experiencia[] = [
     atmosfera: "linear-gradient(165deg, #2c2a1e 0%, #6b5a32 55%, #9a7b3e 100%)",
     imagem: "/cenas/florenca.jpg",
     mapa: { x: 44, y: 28 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_L1mWq5Q0ZEGvjK2t5iQ3NV3aAl49gyon",
   },
   {
     id: "toscana",
@@ -57,6 +61,20 @@ export const EXPERIENCIAS: Experiencia[] = [
     atmosfera: "linear-gradient(165deg, #3a2f1c 0%, #8a6a35 55%, #c9a24b 100%)",
     imagem: "/cenas/toscana.jpg",
     mapa: { x: 42, y: 33 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_Z8oBjqYwJb6LqVYUXTwyNyGV1OlX7Ez9",
+  },
+  {
+    id: "barco_amalfi",
+    cidade: "Costa Amalfitana",
+    titulo: "Passeio de barco pela Costa Amalfitana",
+    valor: 500,
+    microcopia:
+      "Navegar pelas águas cristalinas do mar Tirreno, sentindo a brisa suave no rosto enquanto as falésias desenham um cenário de filme.",
+    referencia: "O charme inconfundível da Costa Amalfitana.",
+    atmosfera: "linear-gradient(165deg, #1f4e5a 0%, #3a7a8a 55%, #7aa0b5 100%)",
+    imagem: "/cenas/capri.jpg",
+    mapa: { x: 53, y: 48 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_RAbgzWMY136XOGf4MTgaXaKv9d8oBGlm",
   },
   {
     id: "veneza",
@@ -69,6 +87,20 @@ export const EXPERIENCIAS: Experiencia[] = [
     atmosfera: "linear-gradient(165deg, #1c2a32 0%, #2f5a6b 55%, #7a93a0 100%)",
     imagem: "/cenas/veneza.jpg",
     mapa: { x: 52, y: 15 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_dEaQq3JMxOzmLXGI0SRvKP17Wn6V9Z2N",
+  },
+  {
+    id: "roteiro_amalfi",
+    cidade: "Costa Amalfitana",
+    titulo: "Roteiro pela Costa Amalfitana",
+    valor: 1000,
+    microcopia:
+      "Desbravar as pequenas vilas incrustadas nas rochas, parando para um limoncello refrescante e absorvendo cada detalhe desse paraíso.",
+    referencia: "Uma jornada inesquecível pelo litoral.",
+    atmosfera: "linear-gradient(165deg, #2a4d3e 0%, #4a8268 55%, #7ab59b 100%)",
+    imagem: "/cenas/capri.jpg",
+    mapa: { x: 54, y: 49 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_mQkX3wr04DjZN2YHKTOZMyV1RvbYaLK9",
   },
   {
     id: "capri",
@@ -81,6 +113,59 @@ export const EXPERIENCIAS: Experiencia[] = [
     atmosfera: "linear-gradient(165deg, #10293a 0%, #1f6b8a 55%, #5aa6c9 100%)",
     imagem: "/cenas/capri.jpg",
     mapa: { x: 55, y: 50 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_lvmJrbM4EVx5mvoTW0f9oKeqZWP97dG6",
+  },
+  {
+    id: "toscana_2dias",
+    cidade: "Toscana",
+    titulo: "Dois dias explorando as paisagens da Toscana",
+    valor: 1500,
+    microcopia:
+      "Atravessar estradinhas de terra ladeadas por ciprestes, descansando em pequenos vilarejos medievais onde o tempo parece ter parado.",
+    referencia: "O coração campestre da Itália.",
+    atmosfera: "linear-gradient(165deg, #3a2f1c 0%, #8a6a35 55%, #c9a24b 100%)",
+    imagem: "/cenas/toscana.jpg",
+    mapa: { x: 41, y: 34 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_4MJxq1Q5rzwvArO3H4c2ZdX2GLyeY0bj",
+  },
+  {
+    id: "hotel_veneza",
+    cidade: "Veneza",
+    titulo: "Hospedagem em charmoso hotel em Veneza",
+    valor: 2000,
+    microcopia:
+      "Adormecer com o som suave da água nos canais e acordar com a luz romântica de Veneza invadindo a janela do quarto.",
+    referencia: "Conforto clássico na cidade das águas.",
+    atmosfera: "linear-gradient(165deg, #1c2a32 0%, #2f5a6b 55%, #7a93a0 100%)",
+    imagem: "/cenas/veneza.jpg",
+    mapa: { x: 53, y: 14 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_4ZlBMjygzNKLK9YclfXYvJ9o6qedknwb",
+  },
+  {
+    id: "capri_completa",
+    cidade: "Capri",
+    titulo: "Experiência completa em Capri",
+    valor: 2500,
+    microcopia:
+      "Viver tudo que Capri tem de melhor: o frescor do mar, a sofisticação da gastronomia local e as paisagens que marcam a alma para sempre.",
+    referencia: "O ápice da beleza mediterrânea.",
+    atmosfera: "linear-gradient(165deg, #10293a 0%, #1f6b8a 55%, #5aa6c9 100%)",
+    imagem: "/cenas/capri.jpg",
+    mapa: { x: 56, y: 51 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_VDPl5BONW98mNDEHOotE7dZJApknyEqb",
+  },
+  {
+    id: "etapa_sonhos",
+    cidade: "Itália",
+    titulo: "Uma etapa da viagem dos sonhos",
+    valor: 3000,
+    microcopia:
+      "Fazer parte dos momentos mais grandiosos dessa jornada, me presenteando com um pedacinho desse sonho inesquecível pela Itália.",
+    referencia: "A grande celebração da vida.",
+    atmosfera: "linear-gradient(165deg, #2e2018 0%, #7a4a2e 55%, #b5803f 100%)",
+    imagem: "/cenas/coliseu.jpg",
+    mapa: { x: 50, y: 35 },
+    linkCartao: "https://payment-link-v3.ton.com.br/pl_Ne5J3b2xn4rk0KgoH4cN0wBpmEVKGgRA",
   },
   {
     id: "livre",

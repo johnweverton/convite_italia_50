@@ -21,7 +21,6 @@ type Fase = "escolha" | "enviando" | "concluido";
 const PIX_CHAVE = process.env.NEXT_PUBLIC_PIX_CHAVE ?? "+5585997180005";
 const PIX_NOME = process.env.NEXT_PUBLIC_PIX_NOME ?? "Carmem Glisse Cavalcante";
 const PIX_CIDADE = process.env.NEXT_PUBLIC_PIX_CIDADE ?? "FORTALEZA";
-const LINK_CARTAO = "https://link.mercadopago.com.br/presentecarmem";
 
 export default function Pagamento({ aberto, experiencia, valor, onFechar }: Props) {
   const [metodo, setMetodo] = useState<Metodo>("pix");
@@ -185,34 +184,36 @@ export default function Pagamento({ aberto, experiencia, valor, onFechar }: Prop
                   />
                 </div>
 
-                {/* Seletor de método */}
-                <div className="mt-6 grid grid-cols-2 gap-2 rounded-sm bg-sepia/5 p-1">
-                  <button
-                    type="button"
-                    onClick={() => setMetodo("pix")}
-                    className={`flex items-center justify-center gap-2 rounded-sm py-2 font-sans text-sm transition-colors ${
-                      metodo === "pix"
-                        ? "bg-terracotta text-creme"
-                        : "text-sepia/70"
-                    }`}
-                  >
-                    <QrCode className="h-4 w-4" /> Pix
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMetodo("cartao")}
-                    className={`flex items-center justify-center gap-2 rounded-sm py-2 font-sans text-sm transition-colors ${
-                      metodo === "cartao"
-                        ? "bg-terracotta text-creme"
-                        : "text-sepia/70"
-                    }`}
-                  >
-                    <CreditCard className="h-4 w-4" /> Cartão
-                  </button>
-                </div>
+                {/* Seletor de método - Só mostra se tiver link do cartão */}
+                {experiencia?.linkCartao && (
+                  <div className="mt-6 grid grid-cols-2 gap-2 rounded-sm bg-sepia/5 p-1">
+                    <button
+                      type="button"
+                      onClick={() => setMetodo("pix")}
+                      className={`flex items-center justify-center gap-2 rounded-sm py-2 font-sans text-sm transition-colors ${
+                        metodo === "pix"
+                          ? "bg-terracotta text-creme"
+                          : "text-sepia/70"
+                      }`}
+                    >
+                      <QrCode className="h-4 w-4" /> Pix
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMetodo("cartao")}
+                      className={`flex items-center justify-center gap-2 rounded-sm py-2 font-sans text-sm transition-colors ${
+                        metodo === "cartao"
+                          ? "bg-terracotta text-creme"
+                          : "text-sepia/70"
+                      }`}
+                    >
+                      <CreditCard className="h-4 w-4" /> Cartão
+                    </button>
+                  </div>
+                )}
 
                 {/* Conteúdo do método */}
-                {metodo === "pix" ? (
+                {metodo === "pix" || !experiencia?.linkCartao ? (
                   <div className="mt-6 text-center">
                     {qrDataUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -251,9 +252,9 @@ export default function Pagamento({ aberto, experiencia, valor, onFechar }: Prop
                   </div>
                 ) : (
                   <div className="mt-6 text-center">
-                    {LINK_CARTAO ? (
+                    {experiencia?.linkCartao ? (
                       <a
-                        href={LINK_CARTAO}
+                        href={experiencia.linkCartao}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 rounded-sm bg-sepia px-6 py-3 font-sans text-sm uppercase tracking-wider text-creme transition-opacity hover:opacity-90"
@@ -262,13 +263,10 @@ export default function Pagamento({ aberto, experiencia, valor, onFechar }: Prop
                       </a>
                     ) : (
                       <p className="rounded-sm bg-sepia/5 p-4 text-sm text-sepia/60">
-                        Configure o link de pagamento em NEXT_PUBLIC_LINK_CARTAO.
+                        Nenhum link de pagamento configurado para este presente.
                       </p>
                     )}
                     <p className="mt-3 font-sans text-sm text-sepia/80">
-                      <strong>Atenção:</strong> Ao abrir a página do Mercado Pago, insira manualmente o valor de <strong>{valor ? formatarBRL(valor) : "seu presente"}</strong>.
-                    </p>
-                    <p className="mt-1 font-sans text-xs text-sepia/50">
                       Você será levado a um ambiente seguro em uma nova aba.
                     </p>
                   </div>
