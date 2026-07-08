@@ -318,9 +318,9 @@ export default function RsvpPage() {
 
               {passo === "acompanhantes" && (
                 <div>
-                  <label className="block font-serif text-lg text-sepia">Nomes dos Acompanhantes</label>
+                  <label className="block font-serif text-lg text-sepia">Nome do Acompanhante</label>
                   <p className="mb-2 font-sans text-xs text-sepia/60">
-                    Adicione os nomes completos de quem irá com você.
+                    Adicione o nome completo de quem irá com você (máximo 1 acompanhante).
                   </p>
                   {acompanhantes.map((acomp, index) => (
                     <div key={index} className="mb-3 flex items-center gap-2">
