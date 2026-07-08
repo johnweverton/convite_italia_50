@@ -1,43 +1,69 @@
 import QRCode from "qrcode";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { deflateSync } from "zlib";
 
 /**
- * Gera um PDF elegante de ingresso desenhando o QR Code como vetores (retângulos),
- * sem nenhuma dependência externa além do 'qrcode' já presente no projeto.
+ * Gera um PDF elegante de ingresso com a logo "Carmem Cavalcante" no cabeçalho,
+ * QR Code vetorial e layout premium.
  *
- * O PDF segue a especificação PDF 1.4 com fontes Type1 padrão do PDF.
+ * Usa a imagem PNG da logo embutida diretamente no PDF como XObject.
  */
 export async function gerarPdfIngresso(ingresso: {
   nome: string;
   token: string;
   tipo: "principal" | "acompanhante";
 }): Promise<Buffer> {
-  // ── 1. Gera a matriz do QR Code ──
+  // 1. Gera a matriz do QR Code
   const qrData = QRCode.create(ingresso.token, { errorCorrectionLevel: "M" });
   const modules = qrData.modules;
-  const qrSize = modules.size; // número de módulos (ex: 29)
+  const qrSize = modules.size;
   const qrModuleData = modules.data as Uint8Array;
 
-  // ── 2. Dimensões da página A5 vertical (em pontos tipográficos: 1pt = 1/72 pol) ──
+  // 2. Le a logo PNG
+  let logoPngBuffer: Buffer;
+  try {
+    logoPngBuffer = readFileSync(join(process.cwd(), "public", "cenas", "logo-carmem.png"));
+  } catch {
+    logoPngBuffer = Buffer.alloc(0);
+  }
+
+  // 3. Extrai dados do PNG para embutir no PDF
+  let logoWidth = 0;
+  let logoHeight = 0;
+  let logoImageData: any = Buffer.alloc(0);
+  let logoHasAlpha = false;
+  let logoBitsPerComponent = 8;
+
+  if (logoPngBuffer.length > 0) {
+    const parsed = parsePng(logoPngBuffer);
+    logoWidth = parsed.width;
+    logoHeight = parsed.height;
+    logoImageData = parsed.rgbData;
+    logoHasAlpha = parsed.hasAlpha;
+    logoBitsPerComponent = parsed.bitsPerComponent;
+  }
+
+  // 4. Dimensoes da pagina A5 vertical (pontos tipograficos)
   const pageWidth = 420;
   const pageHeight = 595;
 
-  // ── 3. Posicionamento do QR no PDF ──
-  const qrDrawSize = 200; // tamanho total do QR desenhado em pontos
+  // 5. Posicionamento do QR no PDF
+  const qrDrawSize = 180;
   const qrX = (pageWidth - qrDrawSize) / 2;
-  const qrY = 200; // distância do fundo da página
+  const qrY = 175;
   const moduleSize = qrDrawSize / qrSize;
 
-  // ── 4. Cores (escala 0-1) ──
-  const COR_FUNDO    = "0.992 0.969 0.937"; // #FDFBEF creme quente
-  const COR_OURO     = "0.541 0.298 0.078"; // #8A4C14 ouro/marrom rico
-  const COR_TEXTO    = "0.239 0.184 0.122"; // #3D2F1F marrom escuro
-  const COR_DETALHE  = "0.541 0.478 0.388"; // #8A7A63 bege médio
-  const COR_QR_BG    = "1 1 1";             // branco para fundo do QR
-  const COR_QR_MOD   = "0.100 0.059 0.000"; // #1A0F00 quase preto aquecido
+  // 6. Cores (escala 0-1)
+  const COR_FUNDO    = "0.992 0.969 0.937";
+  const COR_OURO     = "0.541 0.298 0.078";
+  const COR_TEXTO    = "0.239 0.184 0.122";
+  const COR_DETALHE  = "0.541 0.478 0.388";
+  const COR_QR_BG    = "1 1 1";
+  const COR_QR_MOD   = "0.100 0.059 0.000";
 
-  // ── 5. Função auxiliar: escapa strings para literais PDF ──
+  // 7. Funcao auxiliar: escapa strings para literais PDF
   function pdfStr(s: string): string {
-    // Transliteração de caracteres acentuados para ASCII (fontes Type1 padrão)
     const map: Record<string, string> = {
       "á":"a","à":"a","â":"a","ã":"a","ä":"a",
       "é":"e","è":"e","ê":"e","ë":"e",
@@ -57,13 +83,13 @@ export async function gerarPdfIngresso(ingresso: {
       .replace(/[\\()]/g, (c) => `\\${c}`);
   }
 
-  // ── 6. Centralização de texto (estimativa Helvetica ~0.55 × fontSize por char) ──
+  // 8. Centralizacao de texto
   function centerX(text: string, fontSize: number): number {
     const approxWidth = text.length * fontSize * 0.55;
     return Math.max(20, (pageWidth - approxWidth) / 2);
   }
 
-  // ── 7. Constrói o stream de conteúdo da página ──
+  // 9. Constroi o stream de conteudo da pagina
   const ops: string[] = [];
 
   // Fundo creme
@@ -85,52 +111,67 @@ export async function gerarPdfIngresso(ingresso: {
   // Linha fina horizontal inferior
   ops.push(`24 22 m ${pageWidth - 24} 22 l S`);
 
-  // ── Título: "Carmem - 50 ANOS" ──
-  const titulo = "Carmem - 50 ANOS";
-  ops.push(`BT`);
-  ops.push(`/F1 24 Tf`);
-  ops.push(`${COR_OURO} rg`);
-  ops.push(`${centerX(titulo, 24)} ${pageHeight - 64} Td`);
-  ops.push(`(${pdfStr(titulo)}) Tj`);
-  ops.push(`ET`);
+  // Logo no cabecalho (imagem PNG embutida)
+  if (logoWidth > 0 && logoHeight > 0) {
+    // Calcula dimensoes proporcionais para o cabecalho
+    const maxLogoWidth = 280;
+    const scale = Math.min(maxLogoWidth / logoWidth, 1);
+    const drawW = logoWidth * scale;
+    const drawH = logoHeight * scale;
+    const logoXPos = (pageWidth - drawW) / 2;
+    const logoYPos = pageHeight - 30 - drawH - 10;
+    
+    ops.push(`q`);
+    ops.push(`${drawW} 0 0 ${drawH} ${logoXPos} ${logoYPos} cm`);
+    ops.push(`/Logo Do`);
+    ops.push(`Q`);
+  } else {
+    // Fallback: texto se a logo nao for encontrada
+    const titulo = "Carmem Cavalcante";
+    ops.push(`BT`);
+    ops.push(`/F1 24 Tf`);
+    ops.push(`${COR_OURO} rg`);
+    ops.push(`${centerX(titulo, 24)} ${pageHeight - 60} Td`);
+    ops.push(`(${pdfStr(titulo)}) Tj`);
+    ops.push(`ET`);
 
-  // Subtítulo
-  const subtitulo = "Convite Pessoal & Intransferivel";
-  ops.push(`BT`);
-  ops.push(`/F2 8 Tf`);
-  ops.push(`${COR_DETALHE} rg`);
-  ops.push(`${centerX(subtitulo, 8)} ${pageHeight - 80} Td`);
-  ops.push(`(${pdfStr(subtitulo)}) Tj`);
-  ops.push(`ET`);
+    const subtitulo = "FESTA DI 50 ANNI";
+    ops.push(`BT`);
+    ops.push(`/F2 9 Tf`);
+    ops.push(`${COR_DETALHE} rg`);
+    ops.push(`${centerX(subtitulo, 9)} ${pageHeight - 78} Td`);
+    ops.push(`(${pdfStr(subtitulo)}) Tj`);
+    ops.push(`ET`);
+  }
 
   // Linha separadora
+  const sepHeaderY = logoWidth > 0 ? pageHeight - 130 : pageHeight - 92;
   ops.push(`${COR_OURO} RG`);
   ops.push(`0.4 w`);
-  ops.push(`60 ${pageHeight - 92} m ${pageWidth - 60} ${pageHeight - 92} l S`);
+  ops.push(`60 ${sepHeaderY} m ${pageWidth - 60} ${sepHeaderY} l S`);
 
   // Label "INGRESSO NOMINAL"
   const labelIngresso = "INGRESSO NOMINAL";
   ops.push(`BT`);
   ops.push(`/F3 7.5 Tf`);
   ops.push(`${COR_OURO} rg`);
-  ops.push(`${centerX(labelIngresso, 7.5)} ${pageHeight - 114} Td`);
+  ops.push(`${centerX(labelIngresso, 7.5)} ${sepHeaderY - 22} Td`);
   ops.push(`(${pdfStr(labelIngresso)}) Tj`);
   ops.push(`ET`);
 
-  // ── QR Code: fundo branco ──
+  // QR Code: fundo branco
   const qrPad = 6;
   ops.push(`${COR_QR_BG} rg`);
   ops.push(
     `${qrX - qrPad} ${qrY - qrPad} ${qrDrawSize + qrPad * 2} ${qrDrawSize + qrPad * 2} re f`,
   );
 
-  // ── QR Code: módulos como retângulos preenchidos ──
+  // QR Code: modulos como retangulos preenchidos
   ops.push(`${COR_QR_MOD} rg`);
   for (let row = 0; row < qrSize; row++) {
     for (let col = 0; col < qrSize; col++) {
       const isDark = qrModuleData[row * qrSize + col];
       if (isDark) {
-        // PDF origin = bottom-left; linha 0 do QR fica em cima
         const x = qrX + col * moduleSize;
         const y = qrY + (qrSize - 1 - row) * moduleSize;
         ops.push(
@@ -140,13 +181,13 @@ export async function gerarPdfIngresso(ingresso: {
     }
   }
 
-  // ── Linha separadora abaixo do QR ──
+  // Linha separadora abaixo do QR
   const sepY = qrY - qrPad - 20;
   ops.push(`${COR_OURO} RG`);
   ops.push(`0.4 w`);
   ops.push(`60 ${sepY} m ${pageWidth - 60} ${sepY} l S`);
 
-  // ── Nome do titular ──
+  // Nome do titular
   const nomeTitular = ingresso.nome.toUpperCase();
   ops.push(`BT`);
   ops.push(`/F1 15 Tf`);
@@ -155,7 +196,7 @@ export async function gerarPdfIngresso(ingresso: {
   ops.push(`(${pdfStr(nomeTitular)}) Tj`);
   ops.push(`ET`);
 
-  // ── Tipo do ingresso ──
+  // Tipo do ingresso
   const tipoLabel =
     ingresso.tipo === "principal" ? "TITULAR" : "ACOMPANHANTE";
   ops.push(`BT`);
@@ -165,7 +206,7 @@ export async function gerarPdfIngresso(ingresso: {
   ops.push(`(${pdfStr(tipoLabel)}) Tj`);
   ops.push(`ET`);
 
-  // ── Rodapé ──
+  // Rodape
   const rodape = "Apresente este QR code na entrada";
   ops.push(`BT`);
   ops.push(`/F2 7.5 Tf`);
@@ -176,7 +217,7 @@ export async function gerarPdfIngresso(ingresso: {
 
   const contentStream = ops.join("\n");
 
-  // ── 8. Monta o arquivo PDF binário ──
+  // 10. Monta o arquivo PDF binario
   const chunks: Buffer[] = [];
   const objOffsets: Record<number, number> = {};
   let pos = 0;
@@ -187,57 +228,122 @@ export async function gerarPdfIngresso(ingresso: {
     pos += buf.length;
   }
 
-  // Cabeçalho PDF
+  // Cabecalho PDF
   write("%PDF-1.4\n");
-  write("%\xE2\xE3\xCF\xD3\n"); // bytes binários para indicar arquivo binário
+  write("%\xE2\xE3\xCF\xD3\n");
 
-  // Obj 1 — Catálogo
+  // Obj 1 - Catalogo
   objOffsets[1] = pos;
   write("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
 
-  // Obj 2 — Pages
+  // Obj 2 - Pages
   objOffsets[2] = pos;
   write("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
 
-  // Obj 3 — Page
+  // Preparar dados da logo para o PDF
+  let hasLogoObj = false;
+  let logoObjId = 8;
+  let smaskObjId = 9;
+  let nextObjId = 8;
+
+  if (logoWidth > 0 && logoImageData.length > 0) {
+    hasLogoObj = true;
+    logoObjId = nextObjId++;
+    if (logoHasAlpha) {
+      smaskObjId = nextObjId++;
+    }
+  }
+
+  // Obj 3 - Page (com ou sem logo)
   objOffsets[3] = pos;
+  const xObjectsDict = hasLogoObj ? ` /XObject << /Logo ${logoObjId} 0 R >>` : "";
   write(
     `3 0 obj\n` +
       `<< /Type /Page /Parent 2 0 R\n` +
       `   /MediaBox [0 0 ${pageWidth} ${pageHeight}]\n` +
       `   /Contents 4 0 R\n` +
-      `   /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >> >>\n` +
+      `   /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R >>${xObjectsDict} >>\n` +
       `>>\nendobj\n`,
   );
 
-  // Obj 4 — Content stream
+  // Obj 4 - Content stream
   const streamBuf = Buffer.from(contentStream, "binary");
   objOffsets[4] = pos;
   write(`4 0 obj\n<< /Length ${streamBuf.length} >>\nstream\n`);
   write(streamBuf);
   write("\nendstream\nendobj\n");
 
-  // Obj 5 — Fonte F1: Helvetica-Bold (títulos)
+  // Obj 5 - Fonte F1: Helvetica-Bold (titulos)
   objOffsets[5] = pos;
   write(
     "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>\nendobj\n",
   );
 
-  // Obj 6 — Fonte F2: Helvetica (textos normais)
+  // Obj 6 - Fonte F2: Helvetica (textos normais)
   objOffsets[6] = pos;
   write(
     "6 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n",
   );
 
-  // Obj 7 — Fonte F3: Helvetica-Oblique (labels pequenos)
+  // Obj 7 - Fonte F3: Helvetica-Oblique (labels pequenos)
   objOffsets[7] = pos;
   write(
     "7 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Oblique /Encoding /WinAnsiEncoding >>\nendobj\n",
   );
 
-  // ── Cross-reference table ──
+  // Obj 8+ - Logo image (se disponivel)
+  if (hasLogoObj) {
+    // Extrai RGB e Alpha separados
+    const pixelCount = logoWidth * logoHeight;
+    const rgbBuf = Buffer.alloc(pixelCount * 3);
+    const alphaBuf = logoHasAlpha ? Buffer.alloc(pixelCount) : Buffer.alloc(0);
+    const bytesPerPixel = logoHasAlpha ? 4 : 3;
+
+    for (let i = 0; i < pixelCount; i++) {
+      rgbBuf[i * 3]     = logoImageData[i * bytesPerPixel];
+      rgbBuf[i * 3 + 1] = logoImageData[i * bytesPerPixel + 1];
+      rgbBuf[i * 3 + 2] = logoImageData[i * bytesPerPixel + 2];
+      if (logoHasAlpha) {
+        alphaBuf[i] = logoImageData[i * bytesPerPixel + 3];
+      }
+    }
+
+    const compressedRgb = deflateSync(rgbBuf);
+
+    // SMask (alpha channel) object
+    if (logoHasAlpha) {
+      const compressedAlpha = deflateSync(alphaBuf);
+      objOffsets[smaskObjId] = pos;
+      write(
+        `${smaskObjId} 0 obj\n` +
+        `<< /Type /XObject /Subtype /Image\n` +
+        `   /Width ${logoWidth} /Height ${logoHeight}\n` +
+        `   /ColorSpace /DeviceGray /BitsPerComponent ${logoBitsPerComponent}\n` +
+        `   /Filter /FlateDecode /Length ${compressedAlpha.length} >>\n` +
+        `stream\n`,
+      );
+      write(compressedAlpha);
+      write("\nendstream\nendobj\n");
+    }
+
+    // Logo image object
+    objOffsets[logoObjId] = pos;
+    const smaskRef = logoHasAlpha ? ` /SMask ${smaskObjId} 0 R` : "";
+    write(
+      `${logoObjId} 0 obj\n` +
+      `<< /Type /XObject /Subtype /Image\n` +
+      `   /Width ${logoWidth} /Height ${logoHeight}\n` +
+      `   /ColorSpace /DeviceRGB /BitsPerComponent ${logoBitsPerComponent}\n` +
+      `   /Filter /FlateDecode /Length ${compressedRgb.length}${smaskRef} >>\n` +
+      `stream\n`,
+    );
+    write(compressedRgb);
+    write("\nendstream\nendobj\n");
+  }
+
+  // Cross-reference table
   const xrefPos = pos;
-  const objCount = 8; // objetos 0 a 7
+  const objCount = nextObjId;
 
   write(`xref\n0 ${objCount}\n`);
   write(`0000000000 65535 f \n`);
@@ -250,4 +356,113 @@ export async function gerarPdfIngresso(ingresso: {
   write(`trailer\n<< /Size ${objCount} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF\n`);
 
   return Buffer.concat(chunks);
+}
+
+/**
+ * Parser PNG simplificado que extrai pixels RGBA/RGB raw.
+ */
+function parsePng(buf: Buffer): {
+  width: number;
+  height: number;
+  rgbData: Buffer;
+  hasAlpha: boolean;
+  bitsPerComponent: number;
+} {
+  const { inflateSync } = require("zlib") as typeof import("zlib");
+
+  // Verifica assinatura PNG
+  if (buf.slice(0, 8).toString("hex") !== "89504e470d0a1a0a") {
+    throw new Error("Nao e um arquivo PNG valido.");
+  }
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 8;
+  let colorType = 2; // 2=RGB, 6=RGBA
+  const idatChunks: Buffer[] = [];
+
+  while (offset < buf.length) {
+    const chunkLen = buf.readUInt32BE(offset);
+    const chunkType = buf.slice(offset + 4, offset + 8).toString("ascii");
+    const chunkData = buf.slice(offset + 8, offset + 8 + chunkLen);
+
+    if (chunkType === "IHDR") {
+      width = chunkData.readUInt32BE(0);
+      height = chunkData.readUInt32BE(4);
+      bitDepth = chunkData[8];
+      colorType = chunkData[9];
+    } else if (chunkType === "IDAT") {
+      idatChunks.push(chunkData);
+    } else if (chunkType === "IEND") {
+      break;
+    }
+
+    offset += 8 + chunkLen + 4; // 4 bytes CRC
+  }
+
+  const compressed = Buffer.concat(idatChunks);
+  const raw = inflateSync(compressed);
+
+  const hasAlpha = colorType === 6;
+  const bytesPerPixel = hasAlpha ? 4 : 3;
+  const stride = width * bytesPerPixel;
+
+  // Desfaz filtros PNG (por linha)
+  const pixels = Buffer.alloc(width * height * bytesPerPixel);
+  let prevRow = Buffer.alloc(stride);
+
+  for (let y = 0; y < height; y++) {
+    const filterByte = raw[y * (stride + 1)];
+    const rowStart = y * (stride + 1) + 1;
+    const currentRow = Buffer.alloc(stride);
+
+    for (let x = 0; x < stride; x++) {
+      const rawByte = raw[rowStart + x];
+      const a = x >= bytesPerPixel ? currentRow[x - bytesPerPixel] : 0;
+      const b = prevRow[x];
+      const c = x >= bytesPerPixel ? prevRow[x - bytesPerPixel] : 0;
+
+      let val = rawByte;
+      switch (filterByte) {
+        case 0: // None
+          val = rawByte;
+          break;
+        case 1: // Sub
+          val = (rawByte + a) & 0xff;
+          break;
+        case 2: // Up
+          val = (rawByte + b) & 0xff;
+          break;
+        case 3: // Average
+          val = (rawByte + Math.floor((a + b) / 2)) & 0xff;
+          break;
+        case 4: // Paeth
+          val = (rawByte + paethPredictor(a, b, c)) & 0xff;
+          break;
+      }
+      currentRow[x] = val;
+    }
+
+    currentRow.copy(pixels, y * stride, 0, stride);
+    prevRow = currentRow;
+  }
+
+  return {
+    width,
+    height,
+    rgbData: pixels,
+    hasAlpha,
+    bitsPerComponent: bitDepth,
+  };
+}
+
+function paethPredictor(a: number, b: number, c: number): number {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+  if (pa <= pb && pa <= pc) return a;
+  if (pb <= pc) return b;
+  return c;
 }

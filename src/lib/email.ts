@@ -41,16 +41,19 @@ async function pdfDoIngresso(
   };
 }
 
+/** URL da logo para uso nos e-mails. */
+function getLogoUrl(): string {
+  return `${getSiteUrl()}/cenas/logo-carmem.png`;
+}
+
 /** Template base do e-mail com o layout geral da festa. */
 function layoutEmail(titulo: string, corpo: string): string {
+  const logoUrl = getLogoUrl();
   return `
     <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;background:#fdf8f0;border:1px solid #e2d9c8;border-radius:6px;overflow:hidden;">
-      <!-- Cabeçalho dourado -->
+      <!-- Cabeçalho com logo -->
       <div style="background:#8A4C14;padding:28px 32px;text-align:center;">
-        <h1 style="margin:0;font-size:24px;color:#fdf8f0;letter-spacing:0.04em;">Carmem - 50 ANOS</h1>
-        <p style="margin:6px 0 0;font-size:12px;color:#e8c99a;letter-spacing:0.08em;text-transform:uppercase;">
-          Convite Pessoal & Intransferível
-        </p>
+        <img src="${logoUrl}" alt="Carmem Cavalcante - Festa di 50 Anni" style="max-width:280px;height:auto;margin:0 auto;" />
       </div>
       <!-- Corpo -->
       <div style="padding:32px;">
@@ -62,8 +65,8 @@ function layoutEmail(titulo: string, corpo: string): string {
       <!-- Rodapé -->
       <div style="border-top:1px solid #e2d9c8;padding:16px 32px;text-align:center;background:#fdf8f0;">
         <p style="margin:0;font-size:11px;color:#8a7a63;">
-          Este e-mail foi enviado automaticamente pelo sistema de convites.<br/>
-          Cada ingresso é individual, nominal e intransferível.
+          Este e-mail foi enviado pelo sistema de convites.<br/>
+          Cada ingresso é individual, nominal e intransferivel.
         </p>
       </div>
     </div>
@@ -92,8 +95,8 @@ export async function enviarEmailConvite(params: {
     vagasExtras > 0
       ? `
         <p style="margin:24px 0 0;font-size:15px;color:#3d2f1f;text-align:center;">
-          Você pode levar até <strong>${vagasExtras}</strong> pessoa${vagasExtras > 1 ? "s" : ""} com você.<br/>
-          Informe os nomes para gerarmos o ingresso de cada uma:
+          Voce pode trazer ate <strong>${vagasExtras}</strong> pessoa${vagasExtras > 1 ? "s" : ""} com voce.<br/>
+          Clique no botao abaixo para informar os nomes e gerar os ingressos:
         </p>
         <p style="text-align:center;margin:16px 0 0;">
           <a href="${linkConfirmacao}" style="display:inline-block;background:#8A4C14;color:#fdf8f0;padding:12px 28px;border-radius:4px;text-decoration:none;font-size:14px;letter-spacing:0.05em;text-transform:uppercase;">
@@ -105,8 +108,8 @@ export async function enviarEmailConvite(params: {
 
   const corpo = `
     <p style="text-align:center;font-size:15px;color:#3d2f1f;margin:0 0 20px;">
-      Seu ingresso está em anexo neste e-mail (PDF).<br/>
-      Apresente-o na entrada da festa.
+      Seu ingresso esta em anexo neste e-mail (PDF).<br/>
+      Apresente na entrada da festa.
     </p>
     ${blocoAcompanhantes}
   `;
@@ -114,8 +117,8 @@ export async function enviarEmailConvite(params: {
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Seu ingresso — Carmem - 50 ANOS",
-    html: layoutEmail(`Você está convidado(a)!`, corpo),
+    subject: "Seu ingresso para a festa da Carmem!",
+    html: layoutEmail(`Voce esta convidado(a)!`, corpo),
     attachments: [anexo],
   });
 }
@@ -148,7 +151,7 @@ export async function enviarEmailAcompanhantes(params: {
         <span style="font-size:18px;margin-right:10px;">📄</span>
         <div>
           <p style="margin:0;font-size:14px;font-weight:bold;color:#3d2f1f;">${ing.nome}</p>
-          <p style="margin:2px 0 0;font-size:12px;color:#8a7a63;">${i === 0 ? "Titular" : "Acompanhante"} — ingresso em PDF em anexo</p>
+          <p style="margin:2px 0 0;font-size:12px;color:#8a7a63;">${i === 0 ? "Titular" : "Acompanhante"} (ingresso em PDF em anexo)</p>
         </div>
       </div>
     `,
@@ -157,8 +160,8 @@ export async function enviarEmailAcompanhantes(params: {
 
   const corpo = `
     <p style="text-align:center;font-size:15px;color:#3d2f1f;line-height:1.6;margin:0 0 20px;">
-      Seguem os ingressos de quem vai com você.<br/>
-      Cada PDF é individual — encaminhe para a respectiva pessoa apresentar na entrada.
+      Aqui estao os ingressos de quem vai com voce.<br/>
+      Cada PDF e individual. Encaminhe para a pessoa certa apresentar na entrada.
     </p>
     ${listaIngressos}
   `;
@@ -166,9 +169,9 @@ export async function enviarEmailAcompanhantes(params: {
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Ingressos dos acompanhantes — Carmem - 50 ANOS",
+    subject: "Ingressos dos acompanhantes - Festa da Carmem",
     html: layoutEmail(
-      `Prontinho, ${nomePrincipal.split(" ")[0]}!`,
+      `Tudo certo, ${nomePrincipal.split(" ")[0]}!`,
       corpo,
     ),
     attachments: anexos,
@@ -202,10 +205,10 @@ export async function enviarEmailRsvpPublico(params: {
       <div style="background:#fdf3e7;border:1px solid #e2d9c8;border-radius:4px;padding:12px 16px;margin:8px 0;">
         <p style="margin:0;font-size:14px;font-weight:bold;color:#3d2f1f;">📄 ${ing.nome}</p>
         <p style="margin:4px 0 0;font-size:12px;color:#8a7a63;">
-          ${i === 0 ? "Titular" : "Acompanhante"} — ingresso individual em PDF
+          ${i === 0 ? "Titular" : "Acompanhante"} (ingresso individual em PDF)
         </p>
         <p style="margin:4px 0 0;font-size:12px;color:#8a7a63;">
-          ${i > 0 ? "Encaminhe este PDF diretamente para a pessoa." : "Guarde este PDF e apresente na entrada."}
+          ${i > 0 ? "Encaminhe este PDF para a pessoa." : "Guarde este PDF e apresente na entrada."}
         </p>
       </div>
     `,
@@ -214,9 +217,9 @@ export async function enviarEmailRsvpPublico(params: {
 
   const textoIntro =
     ingressos.length > 1
-      ? `Seguem abaixo os seus ingressos e os de quem vai com você.<br/>
-         Cada PDF é individual — encaminhe cada um para a respectiva pessoa apresentar na entrada.`
-      : `Seu ingresso está em anexo.<br/>
+      ? `Aqui estao os seus ingressos e os de quem vai com voce.<br/>
+         Cada PDF e individual. Encaminhe cada um para a pessoa certa apresentar na entrada.`
+      : `Seu ingresso esta em anexo.<br/>
          Apresente o PDF na entrada da festa.`;
 
   const corpo = `
@@ -225,16 +228,16 @@ export async function enviarEmailRsvpPublico(params: {
     </p>
     ${listaIngressos}
     <p style="text-align:center;margin:24px 0 0;font-size:13px;color:#8a7a63;">
-      ✨ Nos vemos na festa!
+      Nos vemos na festa! ✨
     </p>
   `;
 
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Seu ingresso confirmado — Carmem - 50 ANOS",
+    subject: "Presenca confirmada! Festa da Carmem",
     html: layoutEmail(
-      `Que alegria, ${nomePrincipal.split(" ")[0]}! 🎉`,
+      `Que bom, ${nomePrincipal.split(" ")[0]}! 🎉`,
       corpo,
     ),
     attachments: anexos,

@@ -162,8 +162,7 @@ export default function RsvpPage() {
     setAcompanhantes(novo);
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async () => {
     setErro(null);
 
     const data = {
@@ -248,7 +247,7 @@ export default function RsvpPage() {
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="mt-8">
+        <div className="mt-8">
           <AnimatePresence mode="wait" custom={direcao}>
             <motion.div
               key={passo}
@@ -408,8 +407,9 @@ export default function RsvpPage() {
 
               {passo === "mensagem" ? (
                 <button
-                  type="submit"
+                  type="button"
                   disabled={enviando}
+                  onClick={onSubmit}
                   className="rounded-sm bg-terracotta px-10 py-4 font-sans text-sm uppercase tracking-wider text-creme transition-colors hover:bg-terracotta/90 disabled:opacity-50"
                 >
                   {enviando ? "Enviando..." : "Enviar Resposta"}
@@ -425,7 +425,7 @@ export default function RsvpPage() {
               )}
             </div>
           )}
-        </form>
+        </div>
       </div>
       </div>
     </main>
