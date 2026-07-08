@@ -52,7 +52,7 @@ function layoutEmail(titulo: string, corpo: string): string {
   return `
     <div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;background:#fdf8f0;border:1px solid #e2d9c8;border-radius:6px;overflow:hidden;">
       <!-- Cabeçalho com logo -->
-      <div style="background:#8A4C14;padding:28px 32px;text-align:center;">
+      <div style="background:#fbf7ef;border-bottom:1px solid #e2d9c8;padding:28px 32px;text-align:center;">
         <img src="${logoUrl}" alt="Carmem Cavalcante - Festa di 50 Anni" style="max-width:280px;height:auto;margin:0 auto;" />
       </div>
       <!-- Corpo -->

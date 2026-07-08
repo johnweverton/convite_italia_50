@@ -145,7 +145,7 @@ export default function RsvpPage() {
   };
 
   const addAcompanhante = () => {
-    if (acompanhantes.length < 5) {
+    if (acompanhantes.length < 1) {
       setAcompanhantes([...acompanhantes, ""]);
     }
   };
@@ -341,7 +341,7 @@ export default function RsvpPage() {
                       </button>
                     </div>
                   ))}
-                  {acompanhantes.length < 5 && (
+                  {acompanhantes.length < 1 && (
                     <button
                       type="button"
                       onClick={addAcompanhante}
