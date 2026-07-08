@@ -13,13 +13,10 @@ export default function Fecho() {
 
   // Animações 3D de Adão (Esquerda) - Começa totalmente fora da tela
   const xLeft = useTransform(scrollYProgress, [0.3, 0.7], ["-100vw", "0vw"]);
-  const zLeft = useTransform(scrollYProgress, [0.3, 0.7], [-500, 0]);
-  const rotateYLeft = useTransform(scrollYProgress, [0.3, 0.7], [30, 0]);
+  const opacityArms = useTransform(scrollYProgress, [0.1, 0.4], [0, 1]);
 
   // Animações 3D de Deus (Direita) - Começa totalmente fora da tela
   const xRight = useTransform(scrollYProgress, [0.3, 0.7], ["100vw", "0vw"]);
-  const zRight = useTransform(scrollYProgress, [0.3, 0.7], [-500, 0]);
-  const rotateYRight = useTransform(scrollYProgress, [0.3, 0.7], [-30, 0]);
   
   // Assinatura
   const opacitySignature = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
@@ -27,38 +24,40 @@ export default function Fecho() {
 
   return (
     <section ref={containerRef} className="relative h-[150vh] bg-creme">
-      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden perspective-[1200px]">
+      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden">
         
-        {/* Contêiner principal 3D com mix-blend-mode para "apagar" o fundo bege da imagem */}
-        <div 
-          className="relative flex justify-between h-[30vh] md:h-[45vh] w-full max-w-5xl px-4 md:px-8 mix-blend-multiply"
-          style={{ transformStyle: "preserve-3d" }}
-        >
+        {/* Contêiner dos braços soltos - 3D e paralaxe */}
+        <div className="relative flex justify-between items-center h-[30vh] md:h-[45vh] w-full max-w-6xl px-4 md:px-8">
           
           {/* Metade Esquerda (Adão) */}
           <motion.div 
             style={{ 
               x: xLeft, 
-              z: zLeft,
-              rotateY: rotateYLeft,
+              opacity: opacityArms,
             }}
-            // w-[46%] garante que deixamos os 8% do meio (onde estaria o erro do corte) invisíveis
-            className="relative h-full w-[46%]"
+            className="absolute left-0 h-full w-[46%] flex items-center justify-start"
           >
-            {/* bg-[length:217%] compensa o w-[46%] para que a imagem inteira tenha o tamanho do contêiner pai */}
-            <div className="absolute inset-0 bg-[url('/cenas/maos-vetor.jpg')] bg-[length:217%_auto] bg-left bg-no-repeat" />
+            {/* O braço espelhado para atuar como o braço esquerdo vindo da borda */}
+            <img 
+              src="/cenas/braco.png" 
+              alt="Mão esquerda" 
+              className="w-full h-full object-contain object-left scale-x-[-1] drop-shadow-2xl"
+            />
           </motion.div>
 
           {/* Metade Direita (Deus) */}
           <motion.div 
             style={{ 
               x: xRight, 
-              z: zRight,
-              rotateY: rotateYRight,
+              opacity: opacityArms,
             }}
-            className="relative h-full w-[46%]"
+            className="absolute right-0 h-full w-[46%] flex items-center justify-end"
           >
-            <div className="absolute inset-0 bg-[url('/cenas/maos-vetor.jpg')] bg-[length:217%_auto] bg-right bg-no-repeat" />
+            <img 
+              src="/cenas/braco.png" 
+              alt="Mão direita" 
+              className="w-full h-full object-contain object-right drop-shadow-2xl"
+            />
           </motion.div>
           
         </div>
@@ -66,7 +65,7 @@ export default function Fecho() {
         {/* Assinatura Menor e Autêntica */}
         <motion.div 
           style={{ opacity: opacitySignature, scale: scaleSignature }} 
-          className="mt-8 md:mt-12 text-center px-4"
+          className="mt-8 md:mt-16 text-center px-4"
         >
           <h2 className="font-assinatura text-4xl md:text-6xl text-sepia/80 tracking-wide">
             Carmem Cavalcante
