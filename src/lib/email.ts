@@ -52,28 +52,42 @@ function getLogoUrl(): string {
  */
 function layoutEmail(corpo: string): string {
   const logoUrl = getLogoUrl();
-  return `
-    <div style="font-family:'Georgia', serif; max-width: 520px; margin: 0 auto; background-color: #fbf7ef; color: #3d2f1f; overflow: hidden; padding-bottom: 40px;">
-      
-      <!-- Cabeçalho -->
-      <div style="padding: 40px 32px 20px; text-align: center;">
-        <img src="${logoUrl}" alt="Carmem Cavalcante - Festa di 50 Anni" style="max-width: 280px; height: auto; margin: 0 auto;" />
-      </div>
-
-      <!-- Corpo -->
-      <div style="padding: 0 40px;">
-        ${corpo}
-      </div>
-
-      <!-- Rodapé Minimalista -->
-      <div style="margin-top: 40px; padding: 20px 40px 0; text-align: center; border-top: 1px solid rgba(61, 47, 31, 0.1);">
-        <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: rgba(61, 47, 31, 0.5); letter-spacing: 0.05em; text-transform: uppercase;">
-          Convite individual e intransferível
-        </p>
-      </div>
-
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light only">
+  <meta name="supported-color-schemes" content="light only">
+  <style>
+    :root { color-scheme: light only; }
+    body { margin: 0; padding: 0; background-color: #fbf7ef; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #fbf7ef; -webkit-text-size-adjust: 100%;">
+  <div style="font-family:'Georgia', serif; max-width: 520px; margin: 0 auto; background-color: #fbf7ef; color: #3d2f1f; overflow: hidden; padding-bottom: 40px;">
+    
+    <!-- Cabeçalho -->
+    <div style="padding: 40px 32px 20px; text-align: center;">
+      <img src="${logoUrl}" alt="Carmem Cavalcante - Festa di 50 Anni" style="max-width: 280px; height: auto; margin: 0 auto;" />
     </div>
-  `;
+
+    <!-- Corpo -->
+    <div style="padding: 0 40px;">
+      ${corpo}
+    </div>
+
+    <!-- Rodapé Minimalista -->
+    <div style="margin-top: 40px; padding: 20px 40px 0; text-align: center; border-top: 1px solid rgba(61, 47, 31, 0.1);">
+      <p style="margin: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 10px; color: rgba(61, 47, 31, 0.5); letter-spacing: 0.05em; text-transform: uppercase;">
+        Convite individual e intransferível
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>`;
 }
 
 /**
@@ -126,7 +140,7 @@ export async function enviarEmailConvite(params: {
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Seu convite — Carmem Cavalcante",
+    subject: "Seu convite - 50 anos da Carmem Cavalcante",
     html: layoutEmail(corpo),
     attachments: [anexo],
   });
@@ -171,7 +185,7 @@ export async function enviarEmailAcompanhantes(params: {
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Ingresso do acompanhante — Carmem Cavalcante",
+    subject: "Ingresso do acompanhante - 50 anos da Carmem Cavalcante",
     html: layoutEmail(corpo),
     attachments: anexos,
   });
@@ -201,7 +215,7 @@ export async function enviarEmailRsvpPublico(params: {
   const temAcompanhante = ingressos.length > 1;
 
   const textoAcompanhante = temAcompanhante
-    ? "Os ingressos — para você e seu acompanhante — encontram-se em anexo."
+    ? "Os ingressos - para você e seu acompanhante - encontram-se em anexo."
     : "Seu ingresso encontra-se em anexo.";
 
   const corpo = `
@@ -219,7 +233,7 @@ export async function enviarEmailRsvpPublico(params: {
   return resend.emails.send({
     from: getRemetente(),
     to: para,
-    subject: "Presença confirmada — Carmem Cavalcante",
+    subject: "Presença Confirmada - 50 anos da Carmem Cavalcante",
     html: layoutEmail(corpo),
     attachments: anexos,
   });
