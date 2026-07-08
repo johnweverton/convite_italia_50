@@ -75,7 +75,7 @@ export default async function PainelConvidados({
     <main className="min-h-[100svh] bg-creme px-6 py-12">
       <div className="mx-auto max-w-4xl">
         <h1 className="font-serif text-3xl text-sepia">Convidados</h1>
-        <p className="mt-1 font-sans text-sm text-sepia/60">Carmem na Itália 2026</p>
+        <p className="mt-1 font-sans text-sm text-sepia/60">Carmem - 50 ANOS</p>
 
         {(erroConvites || erroConvidados) && (
           <p className="mt-6 rounded-sm bg-terracotta/10 p-4 font-sans text-sm text-terracotta">

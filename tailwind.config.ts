@@ -46,11 +46,16 @@ const config: Config = {
           "0%, 100%": { transform: "scale(0.88)", opacity: "0.55" },
           "50%": { transform: "scale(1.15)", opacity: "1" },
         },
+        "girar-moeda": {
+          "0%": { transform: "rotateY(0deg)" },
+          "100%": { transform: "rotateY(360deg)" },
+        },
       },
       animation: {
         "fade-up": "fade-up 0.9s ease-out both",
         "scroll-hint": "scroll-hint 1.8s ease-in-out infinite",
         "spark-pulse": "spark-pulse 2.6s ease-in-out infinite",
+        "girar-moeda": "girar-moeda 13s linear infinite",
       },
     },
   },

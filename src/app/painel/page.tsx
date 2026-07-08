@@ -96,7 +96,7 @@ export default async function Painel({
       <div className="mx-auto max-w-4xl">
         <h1 className="font-serif text-3xl text-sepia">Contribuições</h1>
         <p className="mt-1 font-sans text-sm text-sepia/60">
-          Carmem na Itália 2026
+          Carmem - 50 ANOS
         </p>
 
         {error && (
