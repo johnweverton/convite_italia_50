@@ -5,13 +5,18 @@ import { motion } from "framer-motion";
 import type { Experiencia } from "@/lib/experiencias";
 import { formatarBRL } from "@/lib/utils";
 
-/** Mapeia o id da experiência ao vídeo correspondente */
 const VIDEO_MAP: Record<string, string> = {
   roma: "/videos/roma.mp4",
   florenca: "/videos/florenca.mp4",
   toscana: "/videos/toscana.mp4",
+  barco_amalfi: "/videos/passeiodebarcocostaamalfitana.mp4",
   veneza: "/videos/veneza.mp4",
+  roteiro_amalfi: "/videos/roteiro_pela_costa_amalfitana.mp4",
   capri: "/videos/capri.mp4",
+  toscana_2dias: "/videos/paisagemtoscana.mp4",
+  hotel_veneza: "/videos/hotelcharmosoveneza.mp4",
+  capri_completa: "/videos/experienciacompletaemcapri.mp4",
+  etapa_sonhos: "/videos/italia.mp4",
   livre: "/videos/italy.mp4",
 };
 
