@@ -23,6 +23,7 @@ const config: Config = {
         italiana: ["var(--font-italiana)", "Georgia", "serif"],
         roman: ["var(--font-roman)", "Georgia", "serif"],
         "roman-script": ["var(--font-roman-script)", "cursive"],
+        assinatura: ["var(--font-assinatura)", "cursive"],
       },
       boxShadow: {
         ouro: "0 10px 40px -12px rgba(201, 162, 75, 0.45)",

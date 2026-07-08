@@ -40,21 +40,7 @@ export default function Presentes() {
         imagem="/cenas/catolico.jpg"
       />
 
-      {/* Assinatura final */}
-      <footer className="relative overflow-hidden bg-sepia px-6 py-16 text-center text-creme">
-        <div className="mx-auto max-w-xl">
-          <Reveal delay={0.1}>
-            <p className="font-roman-script text-4xl text-dourado sm:text-5xl md:text-6xl">
-              Carmem Glisse Cavalcante
-            </p>
-          </Reveal>
-          <Reveal delay={0.25}>
-            <p className="mt-4 font-roman text-sm uppercase tracking-[0.25em] text-creme/60 sm:text-base">
-              Festa di 50 anni
-            </p>
-          </Reveal>
-        </div>
-      </footer>
+      {/* Fecho antigo removido */}
 
       <Pagamento
         aberto={aberto}

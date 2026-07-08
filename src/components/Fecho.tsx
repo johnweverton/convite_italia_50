@@ -6,55 +6,85 @@ import { motion, useScroll, useTransform } from "framer-motion";
 export default function Fecho() {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Animação atrelada ao scroll deste contêiner
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end end"],
   });
 
-  // As mãos começam afastadas (X) e se juntam no centro (0)
-  const xLeft = useTransform(scrollYProgress, [0.3, 0.7], ["-15%", "0%"]);
-  const xRight = useTransform(scrollYProgress, [0.3, 0.7], ["15%", "0%"]);
+  // Animações 3D de Adão (Esquerda)
+  const xLeft = useTransform(scrollYProgress, [0.3, 0.7], ["-35%", "-3%"]);
+  const zLeft = useTransform(scrollYProgress, [0.3, 0.7], [-300, 0]);
+  const rotateYLeft = useTransform(scrollYProgress, [0.3, 0.7], [20, 0]);
+
+  // Animações 3D de Deus (Direita)
+  const xRight = useTransform(scrollYProgress, [0.3, 0.7], ["35%", "3%"]);
+  const zRight = useTransform(scrollYProgress, [0.3, 0.7], [-300, 0]);
+  const rotateYRight = useTransform(scrollYProgress, [0.3, 0.7], [-20, 0]);
   
-  // A assinatura aparece no final, quando as mãos se tocam
-  const opacitySignature = useTransform(scrollYProgress, [0.7, 0.9], [0, 1]);
-  const ySignature = useTransform(scrollYProgress, [0.7, 0.9], [20, 0]);
+  // A assinatura aparece no final, sutil
+  const opacitySignature = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
+  const scaleSignature = useTransform(scrollYProgress, [0.75, 0.95], [0.9, 1]);
 
   return (
-    <section ref={containerRef} className="relative h-[150vh] bg-[#fdfaf6]">
-      {/* Container sticky para manter a cena na tela enquanto o usuário scrolla a seção */}
-      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden">
+    <section ref={containerRef} className="relative h-[150vh] bg-creme">
+      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden perspective-[1000px]">
         
-        {/* Contêiner principal da pintura dividido ao meio */}
-        <div className="relative flex h-[30vh] md:h-[40vh] w-full max-w-5xl overflow-hidden px-4 md:px-8">
+        {/* Contêiner principal 3D */}
+        <div 
+          className="relative flex h-[35vh] md:h-[45vh] w-full max-w-5xl px-4 md:px-8"
+          style={{ transformStyle: "preserve-3d" }}
+        >
           
           {/* Metade Esquerda (Adão) */}
           <motion.div 
-            style={{ x: xLeft }}
-            className="relative h-full w-1/2 overflow-hidden"
+            style={{ 
+              x: xLeft, 
+              z: zLeft,
+              rotateY: rotateYLeft,
+            }}
+            className="relative h-full w-1/2"
           >
-            <div className="absolute inset-y-0 left-0 w-[200%] bg-[url('/cenas/criacao-adao.png')] bg-contain bg-center bg-no-repeat" />
+            {/* Máscara radial que foca nos dedos (100% à direita) e desaparece para a esquerda */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                WebkitMaskImage: "radial-gradient(circle at 100% 50%, rgba(0,0,0,1) 5%, rgba(0,0,0,0) 80%)",
+                maskImage: "radial-gradient(circle at 100% 50%, rgba(0,0,0,1) 5%, rgba(0,0,0,0) 80%)"
+              }}
+            >
+              <div className="absolute inset-y-0 left-0 w-[200%] bg-[url('/cenas/criacao-adao.png')] bg-contain bg-center bg-no-repeat opacity-90" />
+            </div>
           </motion.div>
 
           {/* Metade Direita (Deus) */}
           <motion.div 
-            style={{ x: xRight }}
-            className="relative h-full w-1/2 overflow-hidden"
+            style={{ 
+              x: xRight, 
+              z: zRight,
+              rotateY: rotateYRight,
+            }}
+            className="relative h-full w-1/2"
           >
-            <div className="absolute inset-y-0 right-0 w-[200%] bg-[url('/cenas/criacao-adao.png')] bg-contain bg-center bg-no-repeat" />
+            {/* Máscara radial que foca nos dedos (0% à esquerda) e desaparece para a direita */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                WebkitMaskImage: "radial-gradient(circle at 0% 50%, rgba(0,0,0,1) 5%, rgba(0,0,0,0) 80%)",
+                maskImage: "radial-gradient(circle at 0% 50%, rgba(0,0,0,1) 5%, rgba(0,0,0,0) 80%)"
+              }}
+            >
+              <div className="absolute inset-y-0 right-0 w-[200%] bg-[url('/cenas/criacao-adao.png')] bg-contain bg-center bg-no-repeat opacity-90" />
+            </div>
           </motion.div>
           
         </div>
 
-        {/* Assinatura */}
+        {/* Assinatura Menor e Autêntica */}
         <motion.div 
-          style={{ opacity: opacitySignature, y: ySignature }} 
+          style={{ opacity: opacitySignature, scale: scaleSignature }} 
           className="mt-8 md:mt-12 text-center px-4"
         >
-          <p className="font-roman text-xs md:text-sm text-sepia/50 tracking-[0.3em] uppercase mb-4">
-            Com carinho,
-          </p>
-          <h2 className="font-roman-script text-5xl md:text-7xl text-terracotta leading-none">
+          <h2 className="font-assinatura text-5xl md:text-6xl text-sepia/80 tracking-wide">
             Carmem Cavalcante
           </h2>
         </motion.div>

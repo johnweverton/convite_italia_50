@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Inter, Italiana } from "next/font/google";
+import { Cormorant_Garamond, Inter, Italiana, Great_Vibes } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -21,6 +21,14 @@ const italiana = Italiana({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-italiana",
+  display: "swap",
+});
+
+// Fonte de assinatura manuscrita realista
+const greatVibes = Great_Vibes({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-assinatura",
   display: "swap",
 });
 
@@ -61,7 +69,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${cormorant.variable} ${inter.variable} ${italiana.variable} ${romanPride.variable} ${romanPrideScript.variable}`}
+      className={`${cormorant.variable} ${inter.variable} ${italiana.variable} ${romanPride.variable} ${romanPrideScript.variable} ${greatVibes.variable}`}
     >
       <body className="font-sans antialiased">{children}</body>
     </html>
