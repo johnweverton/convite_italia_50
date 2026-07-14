@@ -2,6 +2,8 @@ import { getServiceClient } from "@/lib/supabase/server";
 import NovoConviteForm from "@/components/NovoConviteForm";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 type RsvpResposta = {
   id: string;
