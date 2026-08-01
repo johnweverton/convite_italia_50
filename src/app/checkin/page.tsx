@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Html5Qrcode } from "html5-qrcode";
+import CheckinLista from "@/components/CheckinLista";
 
 type Resultado =
   | { tipo: "ok"; nome: string }
@@ -30,6 +31,7 @@ export default function CheckinPage() {
   const [senha, setSenha] = useState("");
   const [autorizado, setAutorizado] = useState(false);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [aba, setAba] = useState<"scanner" | "lista">("scanner");
   
   // Estados da câmera
   const [cameraAtiva, setCameraAtiva] = useState(false);
@@ -171,17 +173,46 @@ export default function CheckinPage() {
   return (
     <main className="relative min-h-[100svh] bg-creme px-6 py-10">
       <FundoSistino />
-      <div className="relative z-10 mx-auto max-w-md">
-        
+      <div className={`relative z-10 mx-auto ${aba === "lista" ? "max-w-lg" : "max-w-md"}`}>
+
         <div className="mb-8 text-center">
           <h1 className="font-serif text-2xl text-sepia">Validação de Ingressos</h1>
           <p className="mt-2 font-sans text-sm text-sepia/60">
-            Aponte a câmera para o QR code no celular ou papel do convidado.
+            {aba === "scanner"
+              ? "Aponte a câmera para o QR code no celular ou papel do convidado."
+              : "Quem já chegou e quem ainda falta."}
           </p>
         </div>
 
+        <div className="mb-6 flex overflow-hidden rounded-sm border border-dourado/30 bg-white">
+          <button
+            type="button"
+            onClick={() => setAba("scanner")}
+            className={`flex-1 py-3 font-sans text-xs uppercase tracking-wider transition-colors ${
+              aba === "scanner" ? "bg-terracotta text-creme" : "text-sepia/60 hover:text-terracotta"
+            }`}
+          >
+            Scanner
+          </button>
+          <button
+            type="button"
+            onClick={() => setAba("lista")}
+            className={`flex-1 py-3 font-sans text-xs uppercase tracking-wider transition-colors ${
+              aba === "lista" ? "bg-terracotta text-creme" : "text-sepia/60 hover:text-terracotta"
+            }`}
+          >
+            Lista de convidados
+          </button>
+        </div>
+
+        {aba === "lista" && <CheckinLista senha={senha} />}
+
         {/* Câmera / Instruções */}
-        <div className="overflow-hidden rounded-sm border border-dourado/30 bg-white shadow-cena">
+        <div
+          className={`overflow-hidden rounded-sm border border-dourado/30 bg-white shadow-cena ${
+            aba === "lista" ? "hidden" : ""
+          }`}
+        >
           <div id={SCANNER_ID} className="w-full bg-black/5" />
 
           {!cameraAtiva && (

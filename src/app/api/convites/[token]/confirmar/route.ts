@@ -3,6 +3,7 @@ import { ConfirmacaoSchema } from "@/lib/schemas";
 import { getServiceClient } from "@/lib/supabase/server";
 import { gerarToken } from "@/lib/tickets";
 import { enviarEmailAcompanhantes } from "@/lib/email";
+import { prazoEncerrado, mensagemPrazoEncerrado } from "@/lib/prazo";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,10 @@ export async function POST(
   request: Request,
   { params }: { params: { token: string } },
 ) {
+  if (prazoEncerrado()) {
+    return NextResponse.json({ erro: mensagemPrazoEncerrado }, { status: 403 });
+  }
+
   let corpo: unknown;
   try {
     corpo = await request.json();

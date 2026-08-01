@@ -3,10 +3,15 @@ import { RsvpPublicoSchema } from "@/lib/schemas";
 import { getServiceClient } from "@/lib/supabase/server";
 import { gerarToken } from "@/lib/tickets";
 import { enviarEmailRsvpPublico } from "@/lib/email";
+import { prazoEncerrado, mensagemPrazoEncerrado } from "@/lib/prazo";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (prazoEncerrado()) {
+    return NextResponse.json({ erro: mensagemPrazoEncerrado }, { status: 403 });
+  }
+
   let corpo: unknown;
   try {
     corpo = await request.json();

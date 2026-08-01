@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { prazoEncerrado, mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
 
 type Estado =
   | { fase: "carregando" }
@@ -107,7 +108,31 @@ export default function ConfirmarPage({ params }: { params: { token: string } })
           </div>
         )}
 
-        {estado.fase === "form" && (
+        {estado.fase === "form" && prazoEncerrado() && (() => {
+          const linkWhatsapp = linkWhatsappCerimonialista(
+            `Olá! Sou ${estado.nomePrincipal} e preciso confirmar acompanhante, mas o prazo no site já encerrou. Pode me ajudar?`,
+          );
+          return (
+            <div className="text-center">
+              <h1 className="font-serif text-2xl text-sepia">Prazo encerrado</h1>
+              <p className="mt-4 font-sans text-sm leading-relaxed text-sepia/80">
+                {mensagemPrazoEncerrado}
+              </p>
+              {linkWhatsapp && (
+                <a
+                  href={linkWhatsapp}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-8 inline-block rounded-sm bg-oliva px-8 py-4 font-sans text-sm uppercase tracking-wider text-creme transition-opacity hover:opacity-90"
+                >
+                  Falar com a cerimonialista no WhatsApp
+                </a>
+              )}
+            </div>
+          );
+        })()}
+
+        {estado.fase === "form" && !prazoEncerrado() && (
           <>
             <h1 className="font-serif text-2xl text-sepia">Olá, {estado.nomePrincipal.split(" ")[0]}</h1>
             <p className="mt-2 font-sans text-sm text-sepia/60">

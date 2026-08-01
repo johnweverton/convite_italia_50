@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { RsvpPublicoSchema, type RsvpPublicoInput } from "@/lib/schemas";
+import { prazoEncerrado, mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
 
 const RESTRICOES = [
   "Nenhuma",
@@ -201,6 +202,36 @@ export default function RsvpPage() {
       setEnviando(false);
     }
   };
+
+  if (prazoEncerrado()) {
+    const linkWhatsapp = linkWhatsappCerimonialista(
+      "Olá! Preciso confirmar presença na festa da Carmem, mas o prazo no site já encerrou. Pode me ajudar?",
+    );
+    return (
+      <main className="flex min-h-[100svh] items-center justify-center bg-creme px-6 py-12">
+        <div className="relative w-full max-w-lg overflow-hidden rounded-sm border border-dourado/30 bg-white p-10 text-center shadow-cena">
+          <FundoSistino />
+          <div className="relative z-10">
+            <Medalhao />
+            <h1 className="mt-6 font-serif text-3xl text-sepia">Prazo encerrado</h1>
+            <p className="mt-4 font-sans text-base leading-relaxed text-sepia/80">
+              {mensagemPrazoEncerrado}
+            </p>
+            {linkWhatsapp && (
+              <a
+                href={linkWhatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-block rounded-sm bg-oliva px-8 py-4 font-sans text-sm uppercase tracking-wider text-creme transition-opacity hover:opacity-90"
+              >
+                Falar com a cerimonialista no WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (sucesso) {
     return (

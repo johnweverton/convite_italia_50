@@ -1,5 +1,7 @@
 import { getServiceClient } from "@/lib/supabase/server";
 import NovoConviteForm from "@/components/NovoConviteForm";
+import ExcluirConviteButton from "@/components/ExcluirConviteButton";
+import RelatorioButton from "@/components/RelatorioButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +16,23 @@ type RsvpResposta = {
   acompanhantes: string[];
   restricao_alimentar: string[];
   mensagem: string | null;
+};
+
+type ConvidadoDoConvite = {
+  id: string;
+  nome: string;
+  tipo: string;
+  status: string;
+  checked_in_at: string | null;
+};
+
+type ConviteComConvidados = {
+  id: string;
+  nome_principal: string;
+  email: string;
+  vagas_extras: number;
+  status: string;
+  convidados: ConvidadoDoConvite[];
 };
 
 export default async function PainelConvidados({
@@ -67,6 +86,15 @@ export default async function PainelConvidados({
     .order("created_at", { ascending: false });
 
   const rsvps: RsvpResposta[] = rsvpData ?? [];
+
+  // Buscar todos os convites (ingressos/QR) para gestão e exclusão de duplicidades
+  const { data: convitesData, error: erroConvites } = await supabase
+    .from("convites")
+    .select("id, nome_principal, email, vagas_extras, status, convidados(id, nome, tipo, status, checked_in_at)")
+    .order("created_at", { ascending: false });
+
+  const convites: ConviteComConvidados[] = (convitesData ?? []) as unknown as ConviteComConvidados[];
+  const senha = searchParams.senha as string;
 
   // Calcular estatísticas
   const confirmados = rsvps.filter((r) => r.presenca);
@@ -190,6 +218,72 @@ export default async function PainelConvidados({
               <p className="font-sans text-sepia/50">Nenhuma resposta recebida ainda.</p>
             </div>
           )}
+        </div>
+
+        {/* Convites / Ingressos (QR code) */}
+        <div className="mt-16 border-t border-sepia/10 pt-16">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="font-serif text-2xl text-sepia">Convites (Ingressos / QR Code)</h2>
+              <p className="mt-1 font-sans text-xs text-sepia/60">
+                Gerencie os convites emitidos. Use "Excluir" para remover duplicidades.
+              </p>
+            </div>
+            <RelatorioButton senha={senha} />
+          </div>
+
+          {erroConvites && (
+            <p className="mb-4 rounded-sm bg-terracotta/10 p-3 font-sans text-sm text-terracotta">
+              Erro ao carregar convites.
+            </p>
+          )}
+
+          <div className="overflow-x-auto rounded-sm border border-sepia/10 bg-white">
+            <table className="w-full text-left font-sans text-sm">
+              <thead className="border-b border-sepia/10 text-xs uppercase tracking-wider text-sepia/50">
+                <tr>
+                  <th className="px-4 py-3">Titular</th>
+                  <th className="px-4 py-3">E-mail</th>
+                  <th className="px-4 py-3">Vagas extras</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Convidados / Check-in</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {convites.map((c) => (
+                  <tr key={c.id} className="border-b border-sepia/5 align-top">
+                    <td className="px-4 py-3 text-sepia">{c.nome_principal}</td>
+                    <td className="px-4 py-3 text-sepia/70">{c.email}</td>
+                    <td className="px-4 py-3 text-sepia/70">{c.vagas_extras}</td>
+                    <td className="px-4 py-3 text-sepia/70">
+                      {c.status === "confirmado" ? "Confirmado" : "Pendente"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <ul className="space-y-1">
+                        {c.convidados.map((cv) => (
+                          <li key={cv.id} className="text-sepia/70">
+                            {cv.nome} ({cv.tipo === "principal" ? "titular" : "acomp."}) —{" "}
+                            {cv.status === "check-in" ? "✅ chegou" : "⏳ aguardando"}
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                    <td className="px-4 py-3">
+                      <ExcluirConviteButton conviteId={c.id} nomePrincipal={c.nome_principal} senha={senha} />
+                    </td>
+                  </tr>
+                ))}
+                {convites.length === 0 && !erroConvites && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-10 text-center text-sepia/50">
+                      Nenhum convite emitido ainda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Gerador Manual de Ingressos */}
