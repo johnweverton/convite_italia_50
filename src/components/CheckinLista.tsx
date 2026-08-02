@@ -129,12 +129,12 @@ export default function CheckinLista({ senha }: { senha: string }) {
               <div>
                 <p className="font-sans text-sm text-sepia">{c.nome}</p>
                 <p className="font-sans text-[11px] text-sepia/50">
-                  {c.tipo === "principal" ? "Titular" : `Acompanhante de ${c.nomePrincipal ?? "—"}`}
+                  {c.tipo === "principal" ? "Titular" : `Acompanhante de ${c.nomePrincipal ?? "-"}`}
                 </p>
               </div>
               {c.status === "check-in" ? (
                 <span className="whitespace-nowrap rounded-full bg-oliva/10 px-3 py-1 font-sans text-xs text-oliva">
-                  ✅ Chegou
+                  Chegou
                 </span>
               ) : (
                 <button
@@ -143,7 +143,7 @@ export default function CheckinLista({ senha }: { senha: string }) {
                   disabled={marcandoId === c.id}
                   className="whitespace-nowrap rounded-full border border-terracotta/30 px-3 py-1 font-sans text-xs text-terracotta hover:bg-terracotta/10 disabled:opacity-50"
                 >
-                  {marcandoId === c.id ? "Marcando..." : "⏳ Marcar chegada"}
+                  {marcandoId === c.id ? "Marcando..." : "Marcar chegada"}
                 </button>
               )}
             </div>

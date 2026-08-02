@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 export default function NovoConviteForm() {
+  const [aberto, setAberto] = useState(false);
   const [nomePrincipal, setNomePrincipal] = useState("");
   const [email, setEmail] = useState("");
   const [vagasExtras, setVagasExtras] = useState(0);
@@ -39,9 +40,33 @@ export default function NovoConviteForm() {
     }
   }
 
+  if (!aberto) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="rounded-sm border border-sepia/20 px-6 py-3 font-sans text-sm uppercase tracking-wider text-sepia transition-colors hover:border-terracotta hover:text-terracotta"
+      >
+        Novo convite manual
+      </button>
+    );
+  }
+
   return (
-    <div className="rounded-sm border border-dourado/30 bg-white p-6">
-      <h2 className="font-serif text-xl text-sepia">Novo convite</h2>
+    <div className="w-full max-w-xl rounded-sm border border-dourado/30 bg-white p-6 shadow-cena">
+      <div className="flex items-center justify-between">
+        <h2 className="font-serif text-xl text-sepia">Novo convite manual</h2>
+        <button
+          type="button"
+          onClick={() => setAberto(false)}
+          className="font-sans text-xs uppercase tracking-wider text-sepia/50 hover:text-terracotta"
+        >
+          Cancelar
+        </button>
+      </div>
+      <p className="mt-1 font-sans text-xs text-sepia/60">
+        Use esta opção apenas se precisar emitir ingressos para alguém que não preencheu o formulário online.
+      </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <input
           type="text"

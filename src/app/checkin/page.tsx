@@ -269,13 +269,13 @@ export default function CheckinPage() {
               <div className="flex-1">
                 {resultado.tipo === "ok" && (
                   <>
-                    <p className="font-sans text-[10px] uppercase tracking-wider opacity-80">Check-in Válido</p>
+                    <p className="font-sans text-[10px] uppercase tracking-wider opacity-80">Check-in válido</p>
                     <p className="font-serif text-lg leading-tight mt-1">{resultado.nome}</p>
                   </>
                 )}
                 {resultado.tipo === "duplicado" && (
                   <>
-                    <p className="font-sans text-[10px] uppercase tracking-wider opacity-80">Atenção: Já Registrado</p>
+                    <p className="font-sans text-[10px] uppercase tracking-wider opacity-80">Atenção: já registrado</p>
                     <p className="font-serif text-lg leading-tight mt-1">{resultado.nome}</p>
                   </>
                 )}
@@ -285,11 +285,6 @@ export default function CheckinPage() {
                     <p className="font-serif text-lg leading-tight mt-1">Ingresso inválido ou não encontrado</p>
                   </>
                 )}
-              </div>
-              <div className="text-3xl">
-                {resultado.tipo === "ok" && "✨"}
-                {resultado.tipo === "duplicado" && "⚠️"}
-                {resultado.tipo === "invalido" && "❌"}
               </div>
             </div>
           </div>

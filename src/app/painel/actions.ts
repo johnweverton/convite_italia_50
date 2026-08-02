@@ -3,11 +3,11 @@
 import { cookies } from "next/headers";
 
 const NOME_COOKIE = "painel_senha";
-const DURACAO_COOKIE_SEGUNDOS = 60 * 60 * 12; // 12h — cobre um turno de trabalho da cerimonialista
+const DURACAO_COOKIE_SEGUNDOS = 60 * 60 * 12; // 12h, cobre um turno de trabalho da cerimonialista
 
 /**
  * Autentica o acesso ao painel privado via cookie httpOnly (nunca via URL).
- * A senha em si continua sendo uma comparação simples com PAINEL_SENHA — não há
+ * A senha em si continua sendo uma comparação simples com PAINEL_SENHA. Não há
  * usuários/sessões no app, então o cookie apenas evita expor a senha na barra
  * de endereço, no histórico do navegador e em logs de acesso.
  */
