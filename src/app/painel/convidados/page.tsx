@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import { getServiceClient } from "@/lib/supabase/server";
 import NovoConviteForm from "@/components/NovoConviteForm";
 import ExcluirConviteButton from "@/components/ExcluirConviteButton";
 import RelatorioButton from "@/components/RelatorioButton";
+import PainelLoginForm from "@/components/PainelLoginForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,45 +37,17 @@ type ConviteComConvidados = {
   convidados: ConvidadoDoConvite[];
 };
 
-export default async function PainelConvidados({
-  searchParams,
-}: {
-  searchParams: { senha?: string };
-}) {
+export default async function PainelConvidados() {
   const senhaCorreta = process.env.PAINEL_SENHA;
-  const autorizado = Boolean(senhaCorreta) && searchParams.senha === senhaCorreta;
+  const senhaCookie = cookies().get("painel_senha")?.value;
+  const autorizado = Boolean(senhaCorreta) && senhaCookie === senhaCorreta;
 
   if (!autorizado) {
     return (
-      <main className="flex min-h-[100svh] items-center justify-center bg-creme px-6">
-        <form
-          method="get"
-          className="w-full max-w-sm rounded-sm border border-dourado/30 bg-white p-10 text-center shadow-cena"
-        >
-          <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-sepia/5">
-            <svg className="h-6 w-6 text-sepia" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h1 className="font-serif text-2xl text-sepia">Painel da Carmem</h1>
-          <p className="mt-2 font-sans text-xs leading-relaxed text-sepia/60">
-            Acesse para gerenciar sua lista de convidados e ver as confirmações.
-          </p>
-          <input
-            type="password"
-            name="senha"
-            placeholder="Senha de acesso"
-            className="mt-8 w-full border-b border-sepia/20 bg-transparent py-2 text-center font-sans text-sepia placeholder-sepia/30 focus:border-terracotta focus:outline-none"
-            autoFocus
-          />
-          <button
-            type="submit"
-            className="mt-8 w-full rounded-sm bg-terracotta py-4 font-sans text-sm uppercase tracking-wider text-creme transition-colors hover:bg-terracotta/90"
-          >
-            Entrar no Painel
-          </button>
-        </form>
-      </main>
+      <PainelLoginForm
+        titulo="Painel da Carmem"
+        descricao="Acesse para gerenciar sua lista de convidados e ver as confirmações."
+      />
     );
   }
 
@@ -94,7 +68,6 @@ export default async function PainelConvidados({
     .order("created_at", { ascending: false });
 
   const convites: ConviteComConvidados[] = (convitesData ?? []) as unknown as ConviteComConvidados[];
-  const senha = searchParams.senha as string;
 
   // Calcular estatísticas
   const confirmados = rsvps.filter((r) => r.presenca);
@@ -229,7 +202,7 @@ export default async function PainelConvidados({
                 Gerencie os convites emitidos. Use "Excluir" para remover duplicidades.
               </p>
             </div>
-            <RelatorioButton senha={senha} />
+            <RelatorioButton />
           </div>
 
           {erroConvites && (
@@ -270,7 +243,7 @@ export default async function PainelConvidados({
                       </ul>
                     </td>
                     <td className="px-4 py-3">
-                      <ExcluirConviteButton conviteId={c.id} nomePrincipal={c.nome_principal} senha={senha} />
+                      <ExcluirConviteButton conviteId={c.id} nomePrincipal={c.nome_principal} />
                     </td>
                   </tr>
                 ))}

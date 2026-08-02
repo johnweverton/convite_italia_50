@@ -1,17 +1,23 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getServiceClient } from "@/lib/supabase/server";
 import { gerarPdfRelatorio } from "@/lib/pdf-relatorio";
 
-function senhaValida(senha: string): boolean {
+/**
+ * Autorização lida do cookie httpOnly (nunca da URL nem de props client) —
+ * cada Server Action revalida por conta própria, direto no cookie da requisição.
+ */
+function senhaAutorizada(): boolean {
   const senhaEsperada = process.env.PAINEL_SENHA;
-  return Boolean(senhaEsperada) && senha === senhaEsperada;
+  const senhaCookie = cookies().get("painel_senha")?.value;
+  return Boolean(senhaEsperada) && senhaCookie === senhaEsperada;
 }
 
 /** Exclui definitivamente um convite (titular + acompanhantes, via cascade) — usado para corrigir duplicidades. */
-export async function excluirConvite(conviteId: string, senha: string) {
-  if (!senhaValida(senha)) {
+export async function excluirConvite(conviteId: string) {
+  if (!senhaAutorizada()) {
     return { ok: false as const, erro: "Não autorizado." };
   }
 
@@ -81,8 +87,8 @@ async function buscarLinhasRelatorio(): Promise<
 }
 
 /** Gera o CSV de todos os ingressos (titulares + acompanhantes) para a gerência da cerimonialista. */
-export async function gerarRelatorioCsv(senha: string) {
-  if (!senhaValida(senha)) {
+export async function gerarRelatorioCsv() {
+  if (!senhaAutorizada()) {
     return { ok: false as const, erro: "Não autorizado." };
   }
 
@@ -119,14 +125,17 @@ export async function gerarRelatorioCsv(senha: string) {
       .join(";");
   });
 
-  const csv = ["﻿" + cabecalho.join(";"), ...linhasCsv].join("\n");
+  // Sem BOM aqui: caracteres invisíveis no início da string não sobrevivem à
+  // serialização da Server Action (o TextDecoder do cliente descarta um BOM
+  // inicial). O BOM é adicionado no navegador, ao montar o Blob do download.
+  const csv = [cabecalho.join(";"), ...linhasCsv].join("\n");
 
   return { ok: true as const, csv };
 }
 
 /** Gera o mesmo relatório em PDF (tabela paginada), para impressão/entrega à cerimonialista. */
-export async function gerarRelatorioPdf(senha: string) {
-  if (!senhaValida(senha)) {
+export async function gerarRelatorioPdf() {
+  if (!senhaAutorizada()) {
     return { ok: false as const, erro: "Não autorizado." };
   }
 

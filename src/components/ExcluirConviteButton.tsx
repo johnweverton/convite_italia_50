@@ -6,11 +6,9 @@ import { excluirConvite } from "@/app/painel/convidados/actions";
 export default function ExcluirConviteButton({
   conviteId,
   nomePrincipal,
-  senha,
 }: {
   conviteId: string;
   nomePrincipal: string;
-  senha: string;
 }) {
   const [excluindo, setExcluindo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -23,7 +21,7 @@ export default function ExcluirConviteButton({
 
     setErro(null);
     setExcluindo(true);
-    const resultado = await excluirConvite(conviteId, senha);
+    const resultado = await excluirConvite(conviteId);
     if (!resultado.ok) {
       setErro(resultado.erro);
       setExcluindo(false);

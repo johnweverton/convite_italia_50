@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { getServiceClient } from "@/lib/supabase/server";
 import { formatarBRL } from "@/lib/utils";
+import PainelLoginForm from "@/components/PainelLoginForm";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,39 +23,17 @@ type Contribuicao = {
  * comparada com PAINEL_SENHA (server-side). Para produção pública, considerar
  * Supabase Auth. Página com noindex (ver metadata global).
  */
-export default async function Painel({
-  searchParams,
-}: {
-  searchParams: { senha?: string };
-}) {
-  const senhaCorreta = "CARMEM"; // Forçado temporariamente
-  const autorizado = searchParams.senha === senhaCorreta;
+export default async function Painel() {
+  const senhaCorreta = process.env.PAINEL_SENHA;
+  const senhaCookie = cookies().get("painel_senha")?.value;
+  const autorizado = Boolean(senhaCorreta) && senhaCookie === senhaCorreta;
 
   if (!autorizado) {
     return (
-      <main className="flex min-h-[100svh] items-center justify-center bg-creme px-6">
-        <form
-          method="get"
-          className="w-full max-w-sm rounded-sm border border-dourado/30 bg-white p-8 text-center shadow-cena"
-        >
-          <h1 className="font-serif text-2xl text-sepia">Painel da Carmem</h1>
-          <p className="mt-2 font-sans text-sm text-sepia/60">
-            Digite a senha para ver as contribuições.
-          </p>
-          <input
-            type="password"
-            name="senha"
-            placeholder="Senha"
-            className="mt-6 w-full rounded-sm border border-sepia/20 px-4 py-3 font-sans focus:border-terracotta focus:outline-none"
-          />
-          <button
-            type="submit"
-            className="mt-4 w-full rounded-sm bg-terracotta py-3 font-sans text-sm uppercase tracking-wider text-creme"
-          >
-            Entrar
-          </button>
-        </form>
-      </main>
+      <PainelLoginForm
+        titulo="Painel da Carmem"
+        descricao="Digite a senha para ver as contribuições."
+      />
     );
   }
 

@@ -23,26 +23,27 @@ function base64ParaBlob(base64: string, tipo: string): Blob {
   return new Blob([bytes], { type: tipo });
 }
 
-export default function RelatorioButton({ senha }: { senha: string }) {
+export default function RelatorioButton() {
   const [gerando, setGerando] = useState<"csv" | "pdf" | null>(null);
   const [erro, setErro] = useState<string | null>(null);
 
   async function baixarCsv() {
     setErro(null);
     setGerando("csv");
-    const resultado = await gerarRelatorioCsv(senha);
+    const resultado = await gerarRelatorioCsv();
     setGerando(null);
     if (!resultado.ok) {
       setErro(resultado.erro);
       return;
     }
-    baixarBlob(new Blob([resultado.csv], { type: "text/csv;charset=utf-8" }), "confirmados-carmem.csv");
+    const BOM = "﻿";
+    baixarBlob(new Blob([BOM + resultado.csv], { type: "text/csv;charset=utf-8" }), "confirmados-carmem.csv");
   }
 
   async function baixarPdf() {
     setErro(null);
     setGerando("pdf");
-    const resultado = await gerarRelatorioPdf(senha);
+    const resultado = await gerarRelatorioPdf();
     setGerando(null);
     if (!resultado.ok) {
       setErro(resultado.erro);
