@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { prazoEncerrado, mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
+import { mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
 
 type Estado =
   | { fase: "carregando" }
@@ -20,6 +20,16 @@ export default function ConfirmarPage({ params }: { params: { token: string } })
   const [nomes, setNomes] = useState<string[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [erroEnvio, setErroEnvio] = useState<string | null>(null);
+
+  // Checagem de prazo pelo relógio do servidor (o do aparelho do convidado pode estar errado).
+  const [prazoStatus, setPrazoStatus] = useState<"verificando" | "aberto" | "encerrado">("verificando");
+
+  useEffect(() => {
+    fetch("/api/prazo")
+      .then((res) => res.json())
+      .then((data) => setPrazoStatus(data.encerrado ? "encerrado" : "aberto"))
+      .catch(() => setPrazoStatus("aberto"));
+  }, []);
 
   useEffect(() => {
     fetch(`/api/convites/${token}`)
@@ -108,7 +118,11 @@ export default function ConfirmarPage({ params }: { params: { token: string } })
           </div>
         )}
 
-        {estado.fase === "form" && prazoEncerrado() && (() => {
+        {estado.fase === "form" && prazoStatus === "verificando" && (
+          <p className="text-center font-sans text-sepia/60">Carregando...</p>
+        )}
+
+        {estado.fase === "form" && prazoStatus === "encerrado" && (() => {
           const linkWhatsapp = linkWhatsappCerimonialista(
             `Olá! Sou ${estado.nomePrincipal} e preciso confirmar acompanhante, mas o prazo no site já encerrou. Pode me ajudar?`,
           );
@@ -132,7 +146,7 @@ export default function ConfirmarPage({ params }: { params: { token: string } })
           );
         })()}
 
-        {estado.fase === "form" && !prazoEncerrado() && (
+        {estado.fase === "form" && prazoStatus === "aberto" && (
           <>
             <h1 className="font-serif text-2xl text-sepia">Olá, {estado.nomePrincipal.split(" ")[0]}</h1>
             <p className="mt-2 font-sans text-sm text-sepia/60">

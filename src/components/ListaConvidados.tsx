@@ -145,7 +145,7 @@ export default function ListaConvidados({
                 })}
               </p>
               {rsvp.convite && (
-                <ExcluirConviteButton conviteId={rsvp.convite.id} nomePrincipal={rsvp.nome} />
+                <ExcluirConviteButton conviteId={rsvp.convite.id} nomePrincipal={rsvp.nome} rsvpId={rsvp.id} />
               )}
             </div>
           </div>

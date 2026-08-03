@@ -4,6 +4,13 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getServiceClient } from "@/lib/supabase/server";
 import { gerarPdfRelatorio } from "@/lib/pdf-relatorio";
+import {
+  escaparCsv,
+  montarRestricaoPorEmail,
+  ordenarPorConfirmacao,
+  restricaoDoConvidado,
+  type ConvidadoRelatorio,
+} from "@/lib/relatorio";
 
 /**
  * Autorização lida do cookie httpOnly (nunca da URL nem de props client).
@@ -15,8 +22,13 @@ function senhaAutorizada(): boolean {
   return Boolean(senhaEsperada) && senhaCookie === senhaEsperada;
 }
 
-/** Exclui definitivamente um convite (titular e acompanhantes, via cascade), usado para corrigir duplicidades. */
-export async function excluirConvite(conviteId: string) {
+/**
+ * Exclui definitivamente um convite (titular e acompanhantes, via cascade), usado para
+ * corrigir duplicidades. Quando o convite veio de uma resposta de RSVP (rsvpId informado),
+ * a resposta também é excluída — senão o card continuaria aparecendo na lista, já que
+ * `respostas_rsvp` e `convites` são tabelas independentes, sem relação de exclusão em cascata.
+ */
+export async function excluirConvite(conviteId: string, rsvpId?: string) {
   if (!senhaAutorizada()) {
     return { ok: false as const, erro: "Não autorizado." };
   }
@@ -29,56 +41,19 @@ export async function excluirConvite(conviteId: string) {
     return { ok: false as const, erro: "Não foi possível excluir o convite." };
   }
 
-  revalidatePath("/painel/convidados");
-  return { ok: true as const };
-}
-
-type ConvidadoRelatorio = {
-  convite_id: string;
-  nome: string;
-  tipo: string;
-  status: string;
-  checked_in_at: string | null;
-  created_at: string;
-  convites: {
-    nome_principal: string;
-    email: string;
-    created_at: string;
-  } | null;
-};
-
-function escaparCsv(valor: string): string {
-  if (/[",\n;]/.test(valor)) {
-    return `"${valor.replace(/"/g, '""')}"`;
-  }
-  return valor;
-}
-
-/**
- * Ordena por sequência de confirmação (convite mais antigo primeiro) e, dentro
- * de cada convite, coloca o titular antes dos acompanhantes.
- */
-function ordenarPorConfirmacao(linhas: ConvidadoRelatorio[]): ConvidadoRelatorio[] {
-  const grupos = new Map<string, { criadoEm: number; itens: ConvidadoRelatorio[] }>();
-
-  for (const linha of linhas) {
-    const criadoEm = new Date(linha.convites?.created_at ?? linha.created_at).getTime();
-    const grupo = grupos.get(linha.convite_id);
-    if (grupo) {
-      grupo.itens.push(linha);
-    } else {
-      grupos.set(linha.convite_id, { criadoEm, itens: [linha] });
+  if (rsvpId) {
+    const { error: erroRsvp } = await supabase.from("respostas_rsvp").delete().eq("id", rsvpId);
+    if (erroRsvp) {
+      console.error("Convite excluído, mas falhou ao excluir a resposta de RSVP associada:", erroRsvp);
+      return {
+        ok: false as const,
+        erro: "O ingresso foi excluído, mas não foi possível remover a resposta do formulário. Atualize a página.",
+      };
     }
   }
 
-  return Array.from(grupos.values())
-    .sort((a, b) => a.criadoEm - b.criadoEm)
-    .flatMap((grupo) =>
-      grupo.itens.sort((a, b) => {
-        if (a.tipo === b.tipo) return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-        return a.tipo === "principal" ? -1 : 1;
-      }),
-    );
+  revalidatePath("/painel/convidados");
+  return { ok: true as const };
 }
 
 /** Busca convidados (com convite/titular) e cruza a restrição alimentar por e-mail, usado pelo CSV e pelo PDF. */
@@ -100,14 +75,7 @@ async function buscarLinhasRelatorio(): Promise<
     .from("respostas_rsvp")
     .select("email, restricao_alimentar");
 
-  const restricaoPorEmail = new Map<string, string>();
-  for (const r of rsvps ?? []) {
-    const restricoes = (r.restricao_alimentar ?? []) as string[];
-    if (restricoes.length > 0) {
-      restricaoPorEmail.set(r.email, restricoes.join(" / "));
-    }
-  }
-
+  const restricaoPorEmail = montarRestricaoPorEmail(rsvps ?? []);
   const linhas = ordenarPorConfirmacao((convidados ?? []) as unknown as ConvidadoRelatorio[]);
 
   return { ok: true, linhas, restricaoPorEmail };
@@ -137,13 +105,12 @@ export async function gerarRelatorioCsv() {
   ];
 
   const linhasCsv = linhas.map((c) => {
-    const email = c.convites?.email ?? "";
     return [
       c.nome,
       c.tipo === "principal" ? "Titular" : "Acompanhante",
       c.convites?.nome_principal ?? "",
-      email,
-      restricaoPorEmail.get(email) ?? "Nenhuma informada",
+      c.convites?.email ?? "",
+      restricaoDoConvidado(c, restricaoPorEmail, "Nenhuma informada", "Não se aplica (acompanhante)"),
       c.status === "check-in" ? "Chegou" : "Aguardando",
       c.checked_in_at ? "Sim" : "Não",
       c.checked_in_at ? new Date(c.checked_in_at).toLocaleString("pt-BR") : "",
@@ -175,7 +142,9 @@ export async function gerarRelatorioPdf() {
   const totalPessoas = linhas.length;
   const totalTitulares = linhas.filter((c) => c.tipo === "principal").length;
   const totalAcompanhantes = totalPessoas - totalTitulares;
-  const totalComRestricao = linhas.filter((c) => restricaoPorEmail.has(c.convites?.email ?? "")).length;
+  const totalComRestricao = linhas.filter(
+    (c) => c.tipo === "principal" && restricaoPorEmail.has(c.convites?.email ?? ""),
+  ).length;
   const totalChegaram = linhas.filter((c) => c.status === "check-in").length;
 
   const resumo = [
@@ -184,16 +153,13 @@ export async function gerarRelatorioPdf() {
     `Com restrição alimentar: ${totalComRestricao}  |  Já chegaram (check-in): ${totalChegaram}`,
   ];
 
-  const linhasPdf = linhas.map((c) => {
-    const email = c.convites?.email ?? "";
-    return {
-      nome: c.nome,
-      tipo: c.tipo === "principal" ? "Titular" : "Acomp.",
-      titular: c.convites?.nome_principal ?? "",
-      restricao: restricaoPorEmail.get(email) ?? "Nenhuma",
-      status: c.status === "check-in" ? "Chegou" : "Aguard.",
-    };
-  });
+  const linhasPdf = linhas.map((c) => ({
+    nome: c.nome,
+    tipo: c.tipo === "principal" ? "Titular" : "Acomp.",
+    titular: c.convites?.nome_principal ?? "",
+    restricao: restricaoDoConvidado(c, restricaoPorEmail, "Nenhuma", "N/A"),
+    status: c.status === "check-in" ? "Chegou" : "Aguard.",
+  }));
 
   try {
     const buffer = await gerarPdfRelatorio(linhasPdf, resumo);

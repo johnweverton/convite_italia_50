@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { RsvpPublicoSchema, type RsvpPublicoInput } from "@/lib/schemas";
-import { prazoEncerrado, mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
+import { mensagemPrazoEncerrado, linkWhatsappCerimonialista } from "@/lib/prazo";
 
 const RESTRICOES = [
   "Nenhuma",
@@ -89,6 +89,17 @@ export default function RsvpPage() {
 
   const [passo, setPasso] = useState<Passo>("presenca");
   const [direcao, setDirecao] = useState(1);
+
+  // A checagem de prazo precisa vir do relógio do servidor: o relógio do aparelho do
+  // convidado pode estar com data/fuso errados e bloquear (ou liberar) indevidamente.
+  const [prazoStatus, setPrazoStatus] = useState<"verificando" | "aberto" | "encerrado">("verificando");
+
+  useEffect(() => {
+    fetch("/api/prazo")
+      .then((res) => res.json())
+      .then((data) => setPrazoStatus(data.encerrado ? "encerrado" : "aberto"))
+      .catch(() => setPrazoStatus("aberto"));
+  }, []);
 
   const passos: Passo[] =
     presenca === true
@@ -203,7 +214,15 @@ export default function RsvpPage() {
     }
   };
 
-  if (prazoEncerrado()) {
+  if (prazoStatus === "verificando") {
+    return (
+      <main className="flex min-h-[100svh] items-center justify-center bg-creme px-6">
+        <p className="font-sans text-sm text-sepia/50">Carregando...</p>
+      </main>
+    );
+  }
+
+  if (prazoStatus === "encerrado") {
     const linkWhatsapp = linkWhatsappCerimonialista(
       "Olá! Preciso confirmar presença na festa da Carmem, mas o prazo no site já encerrou. Pode me ajudar?",
     );
