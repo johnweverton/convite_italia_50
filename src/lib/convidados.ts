@@ -25,6 +25,8 @@ export type ConviteComConvidados = {
   vagas_extras: number;
   status: string;
   created_at: string;
+  /** Preenchido pela migration 004 + backfill 005. Nulo em convites manuais ou legados sem backfill. */
+  rsvp_id?: string | null;
   convidados: ConvidadoDoConvite[];
 };
 
@@ -50,23 +52,38 @@ export function mapConvite(c: ConviteComConvidados): ConviteResumo {
 
 /**
  * Casa cada resposta de RSVP confirmada com o convite (ingresso/QR) que ela gerou.
- * Como as duas tabelas só se relacionam por e-mail (sem chave estrangeira), em
- * caso de duplicidade (mesmo e-mail com mais de um convite) o casamento usa o
- * convite criado mais próximo no tempo da resposta, já que ambos são inseridos
- * na mesma requisição em /api/rsvp. Convites que sobram (sem par) são os
- * criados manualmente pelo painel.
+ *
+ * Fonte da verdade: `convite.rsvp_id` (migration 004 + backfill 005). Só cai na
+ * heurística por e-mail + horário mais próximo para convites legados que, por
+ * algum motivo, tenham ficado sem rsvp_id (ex.: backfill rodado antes de algum
+ * convite existir). Convites que sobram sem par nenhum são os criados
+ * manualmente pelo painel.
  */
 export function parearConvites(rsvps: RsvpResposta[], convites: ConviteComConvidados[]) {
   const disponiveis = [...convites];
   const porRsvpId = new Map<string, ConviteComConvidados>();
 
-  const emOrdemDeChegada = rsvps
-    .filter((r) => r.presenca)
+  const confirmados = rsvps.filter((r) => r.presenca);
+
+  // 1. Casamento exato via rsvp_id, quando presente.
+  for (const rsvp of confirmados) {
+    const idx = disponiveis.findIndex((c) => c.rsvp_id === rsvp.id);
+    if (idx !== -1) {
+      porRsvpId.set(rsvp.id, disponiveis[idx]);
+      disponiveis.splice(idx, 1);
+    }
+  }
+
+  // 2. Heurística por e-mail + horário mais próximo, só para quem sobrou sem par
+  // exato — e só considerando convites sem rsvp_id (os com rsvp_id já pertencem
+  // a outra resposta, ainda que compartilhem o mesmo e-mail).
+  const semParExato = confirmados
+    .filter((r) => !porRsvpId.has(r.id))
     .slice()
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  for (const rsvp of emOrdemDeChegada) {
-    const candidatos = disponiveis.filter((c) => c.email === rsvp.email);
+  for (const rsvp of semParExato) {
+    const candidatos = disponiveis.filter((c) => c.email === rsvp.email && !c.rsvp_id);
     if (candidatos.length === 0) continue;
 
     const rsvpTime = new Date(rsvp.created_at).getTime();

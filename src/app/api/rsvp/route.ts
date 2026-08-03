@@ -32,14 +32,18 @@ export async function POST(request: Request) {
 
   try {
     // 1. Salvar a resposta no banco de dados de RSVP (funciona como log geral)
-    const { error: erroRsvp } = await supabase.from("respostas_rsvp").insert({
-      nome,
-      email,
-      presenca,
-      acompanhantes,
-      restricao_alimentar,
-      mensagem: mensagem || null,
-    });
+    const { data: respostaRsvp, error: erroRsvp } = await supabase
+      .from("respostas_rsvp")
+      .insert({
+        nome,
+        email,
+        presenca,
+        acompanhantes,
+        restricao_alimentar,
+        mensagem: mensagem || null,
+      })
+      .select("id")
+      .single();
 
     if (erroRsvp) {
       console.error("Erro ao salvar resposta de RSVP:", erroRsvp);
@@ -64,6 +68,7 @@ export async function POST(request: Request) {
         vagas_extras: acompanhantes.length,
         token: tokenConvite,
         status: "confirmado",
+        rsvp_id: respostaRsvp?.id ?? null,
       })
       .select("id")
       .single();

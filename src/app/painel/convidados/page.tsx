@@ -35,7 +35,7 @@ export default async function PainelConvidados() {
 
   const { data: convitesData, error: erroConvites } = await supabase
     .from("convites")
-    .select("id, nome_principal, email, vagas_extras, status, created_at, convidados(id, nome, tipo, status)")
+    .select("id, nome_principal, email, vagas_extras, status, created_at, rsvp_id, convidados(id, nome, tipo, status)")
     .order("created_at", { ascending: false });
 
   const convites: ConviteComConvidados[] = (convitesData ?? []) as unknown as ConviteComConvidados[];

@@ -91,6 +91,30 @@ describe("parearConvites", () => {
     expect(porRsvpId.has("r1")).toBe(false);
     expect(restantes).toHaveLength(1);
   });
+
+  it("usa convite.rsvp_id (fonte da verdade) mesmo quando a heuristica por horario indicaria outro convite", () => {
+    // r1 e r2 compartilham e-mail; pelo horario, a heuristica casaria r1 com c1 (mais
+    // proximo), mas o rsvp_id gravado no banco diz que c1 na verdade pertence a r2.
+    const r1 = rsvp({ id: "r1", email: "dup@x.com", created_at: "2026-07-01T10:00:00-03:00" });
+    const r2 = rsvp({ id: "r2", email: "dup@x.com", created_at: "2026-07-01T10:00:00-03:00" });
+    const c1 = convite({ id: "c1", email: "dup@x.com", created_at: "2026-07-01T10:00:01-03:00", rsvp_id: "r2" });
+
+    const { porRsvpId, restantes } = parearConvites([r1, r2], [c1]);
+
+    expect(porRsvpId.get("r2")?.id).toBe("c1");
+    expect(porRsvpId.has("r1")).toBe(false);
+    expect(restantes).toHaveLength(0);
+  });
+
+  it("nao usa um convite que ja tem rsvp_id de outra pessoa como candidato da heuristica", () => {
+    const r1 = rsvp({ id: "r1", email: "dup@x.com" });
+    const c1 = convite({ id: "c1", email: "dup@x.com", rsvp_id: "outra-resposta-qualquer" });
+
+    const { porRsvpId, restantes } = parearConvites([r1], [c1]);
+
+    expect(porRsvpId.has("r1")).toBe(false);
+    expect(restantes.map((c) => c.id)).toEqual(["c1"]);
+  });
 });
 
 describe("mapConvite", () => {
