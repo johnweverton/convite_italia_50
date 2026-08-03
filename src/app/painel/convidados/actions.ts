@@ -24,16 +24,33 @@ function senhaAutorizada(): boolean {
 
 /**
  * Exclui definitivamente um convite (titular e acompanhantes, via cascade), usado para
- * corrigir duplicidades. Quando o convite veio de uma resposta de RSVP (rsvpId informado),
- * a resposta também é excluída — senão o card continuaria aparecendo na lista, já que
- * `respostas_rsvp` e `convites` são tabelas independentes, sem relação de exclusão em cascata.
+ * corrigir duplicidades. Quando o convite veio de uma resposta de RSVP, a resposta
+ * também é excluída, senão o card continuaria aparecendo na lista (respostas_rsvp e
+ * convites não têm relação de exclusão em cascata por conta própria).
+ *
+ * A relação com a resposta de RSVP é lida de `convites.rsvp_id` (coluna adicionada na
+ * migration 004 + backfill 005). Se essa coluna ainda não existir no banco (migration
+ * não aplicada), cai de volta no valor calculado por heurística na tela (e-mail +
+ * horário mais próximo) — passado em `rsvpIdHeuristico` — para não quebrar a exclusão
+ * enquanto a migration não é aplicada.
  */
-export async function excluirConvite(conviteId: string, rsvpId?: string) {
+export async function excluirConvite(conviteId: string, rsvpIdHeuristico?: string) {
   if (!senhaAutorizada()) {
     return { ok: false as const, erro: "Não autorizado." };
   }
 
   const supabase = getServiceClient();
+
+  const { data: convite, error: erroBusca } = await supabase
+    .from("convites")
+    .select("rsvp_id")
+    .eq("id", conviteId)
+    .maybeSingle();
+
+  const rsvpId: string | undefined = erroBusca
+    ? rsvpIdHeuristico
+    : ((convite?.rsvp_id as string | null | undefined) ?? undefined);
+
   const { error } = await supabase.from("convites").delete().eq("id", conviteId);
 
   if (error) {

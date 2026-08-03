@@ -5,6 +5,8 @@ const mockSupabase = vi.hoisted(() => ({
   deleteCalls: [] as Array<{ table: string; col: string; val: string }>,
   deleteResponses: {} as Record<string, { error: unknown }>,
   selectResponses: {} as Record<string, { data: unknown; error: unknown }>,
+  /** Resposta da consulta pontual `.from("convites").select("rsvp_id").eq(...).maybeSingle()`. */
+  convitesRsvpIdLookup: { data: null as { rsvp_id: string | null } | null, error: null as unknown },
 }));
 
 vi.mock("next/headers", () => ({
@@ -27,7 +29,18 @@ vi.mock("@/lib/supabase/server", () => ({
           return mockSupabase.deleteResponses[table] ?? { error: null };
         },
       }),
-      select: async () => mockSupabase.selectResponses[table] ?? { data: [], error: null },
+      select: (cols: string) => {
+        // Consulta pontual de excluirConvite: convites.select("rsvp_id").eq(...).maybeSingle()
+        if (table === "convites" && cols === "rsvp_id") {
+          return {
+            eq: () => ({
+              maybeSingle: async () => mockSupabase.convitesRsvpIdLookup,
+            }),
+          };
+        }
+        // Consultas de buscarLinhasRelatorio: awaitable direto, sem encadeamento.
+        return Promise.resolve(mockSupabase.selectResponses[table] ?? { data: [], error: null });
+      },
     }),
   }),
 }));
@@ -44,6 +57,7 @@ beforeEach(() => {
   mockSupabase.deleteCalls.length = 0;
   mockSupabase.deleteResponses = {};
   mockSupabase.selectResponses = {};
+  mockSupabase.convitesRsvpIdLookup = { data: null, error: null };
 });
 
 describe("excluirConvite", () => {
@@ -54,8 +68,9 @@ describe("excluirConvite", () => {
     expect(mockSupabase.deleteCalls).toHaveLength(0);
   });
 
-  it("exclui o convite e a resposta de RSVP associada quando rsvpId e informado (card de RSVP)", async () => {
-    const resultado = await excluirConvite("convite-1", "rsvp-1");
+  it("quando convites.rsvp_id existe e aponta para uma resposta, exclui a resposta correspondente automaticamente (sem depender de valor vindo da tela)", async () => {
+    mockSupabase.convitesRsvpIdLookup = { data: { rsvp_id: "rsvp-1" }, error: null };
+    const resultado = await excluirConvite("convite-1");
     expect(resultado.ok).toBe(true);
     expect(mockSupabase.deleteCalls).toEqual([
       { table: "convites", col: "id", val: "convite-1" },
@@ -63,22 +78,35 @@ describe("excluirConvite", () => {
     ]);
   });
 
-  it("nao tenta excluir nenhuma resposta de RSVP quando rsvpId nao e informado (convite manual)", async () => {
-    const resultado = await excluirConvite("convite-manual-1");
+  it("convite manual (rsvp_id nulo no banco) nao exclui nenhuma resposta de RSVP, mesmo se um valor de heuristica for passado por engano", async () => {
+    mockSupabase.convitesRsvpIdLookup = { data: { rsvp_id: null }, error: null };
+    const resultado = await excluirConvite("convite-manual-1", "rsvp-nao-deveria-ser-usado");
     expect(resultado.ok).toBe(true);
     expect(mockSupabase.deleteCalls).toEqual([{ table: "convites", col: "id", val: "convite-manual-1" }]);
   });
 
-  it("retorna erro e nao tenta excluir a resposta de RSVP quando a exclusao do convite falha", async () => {
+  it("quando a coluna rsvp_id ainda nao existe (migration nao aplicada), usa o valor calculado por heuristica na tela", async () => {
+    mockSupabase.convitesRsvpIdLookup = { data: null, error: { message: 'column "rsvp_id" does not exist' } };
+    const resultado = await excluirConvite("convite-1", "rsvp-heuristico-1");
+    expect(resultado.ok).toBe(true);
+    expect(mockSupabase.deleteCalls).toEqual([
+      { table: "convites", col: "id", val: "convite-1" },
+      { table: "respostas_rsvp", col: "id", val: "rsvp-heuristico-1" },
+    ]);
+  });
+
+  it("retorna erro e nao tenta excluir nenhuma resposta de RSVP quando a exclusao do convite falha", async () => {
+    mockSupabase.convitesRsvpIdLookup = { data: { rsvp_id: "rsvp-1" }, error: null };
     mockSupabase.deleteResponses.convites = { error: { message: "falhou" } };
-    const resultado = await excluirConvite("convite-1", "rsvp-1");
+    const resultado = await excluirConvite("convite-1");
     expect(resultado.ok).toBe(false);
     expect(mockSupabase.deleteCalls).toEqual([{ table: "convites", col: "id", val: "convite-1" }]);
   });
 
   it("sinaliza erro (sem quebrar) quando o convite some mas a resposta de RSVP falha ao ser excluida", async () => {
+    mockSupabase.convitesRsvpIdLookup = { data: { rsvp_id: "rsvp-1" }, error: null };
     mockSupabase.deleteResponses.respostas_rsvp = { error: { message: "falhou" } };
-    const resultado = await excluirConvite("convite-1", "rsvp-1");
+    const resultado = await excluirConvite("convite-1");
     expect(resultado.ok).toBe(false);
   });
 });
