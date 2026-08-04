@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { Html5Qrcode } from "html5-qrcode";
 import CheckinLista from "@/components/CheckinLista";
@@ -30,6 +30,8 @@ function FundoSistino() {
 export default function CheckinPage() {
   const [senha, setSenha] = useState("");
   const [autorizado, setAutorizado] = useState(false);
+  const [validandoSenha, setValidandoSenha] = useState(false);
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [aba, setAba] = useState<"scanner" | "lista">("scanner");
   
@@ -132,14 +134,32 @@ export default function CheckinPage() {
   };
 
   if (!autorizado) {
+    const validarSenha = async (e: FormEvent) => {
+      e.preventDefault();
+      setErroSenha(null);
+      setValidandoSenha(true);
+      try {
+        const res = await fetch("/api/checkin/auth", {
+          headers: { "x-checkin-senha": senha },
+        });
+        if (res.ok) {
+          setAutorizado(true);
+        } else {
+          const data = await res.json().catch(() => null);
+          setErroSenha(data?.erro ?? "Senha incorreta.");
+        }
+      } catch {
+        setErroSenha("Erro de conexão. Tente novamente.");
+      } finally {
+        setValidandoSenha(false);
+      }
+    };
+
     return (
       <main className="relative flex min-h-[100svh] items-center justify-center bg-creme px-6">
         <FundoSistino />
         <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setAutorizado(true);
-          }}
+          onSubmit={validarSenha}
           className="relative z-10 w-full max-w-sm rounded-sm border border-dourado/30 bg-white p-10 text-center shadow-cena"
         >
           <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-full bg-sepia/5">
@@ -159,11 +179,15 @@ export default function CheckinPage() {
             className="mt-8 w-full border-b border-sepia/20 bg-transparent py-2 text-center font-sans text-sepia placeholder-sepia/30 focus:border-terracotta focus:outline-none"
             autoFocus
           />
+          {erroSenha && (
+            <p className="mt-4 font-sans text-xs text-terracotta">{erroSenha}</p>
+          )}
           <button
             type="submit"
-            className="mt-8 w-full rounded-sm bg-terracotta py-4 font-sans text-sm uppercase tracking-wider text-creme transition-colors hover:bg-terracotta/90"
+            disabled={validandoSenha}
+            className="mt-8 w-full rounded-sm bg-terracotta py-4 font-sans text-sm uppercase tracking-wider text-creme transition-colors hover:bg-terracotta/90 disabled:opacity-50"
           >
-            Acessar Sistema
+            {validandoSenha ? "Verificando..." : "Acessar Sistema"}
           </button>
         </form>
       </main>
