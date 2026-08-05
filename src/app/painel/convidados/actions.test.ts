@@ -3,10 +3,22 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 const estadoCookie = vi.hoisted(() => ({ senha: undefined as string | undefined }));
 const mockSupabase = vi.hoisted(() => ({
   deleteCalls: [] as Array<{ table: string; col: string; val: string }>,
+  updateCalls: [] as Array<{ table: string; values: unknown; col: string; val: string }>,
   deleteResponses: {} as Record<string, { error: unknown }>,
+  updateResponses: {} as Record<string, { error: unknown }>,
   selectResponses: {} as Record<string, { data: unknown; error: unknown }>,
   /** Resposta da consulta pontual `.from("convites").select("rsvp_id").eq(...).maybeSingle()`. */
   convitesRsvpIdLookup: { data: null as { rsvp_id: string | null } | null, error: null as unknown },
+  /** Resposta de `.from("convites").select("id, nome_principal").eq(...).maybeSingle()`. */
+  convitesLookup: {
+    data: null as { id: string; nome_principal: string } | null,
+    error: null as unknown,
+  },
+  /** Resposta de `.from("convidados").select("nome, tipo, token").eq("convite_id", ...)`. */
+  convidadosLookup: {
+    data: null as Array<{ nome: string; tipo: string; token: string }> | null,
+    error: null as unknown,
+  },
 }));
 
 vi.mock("next/headers", () => ({
@@ -29,6 +41,12 @@ vi.mock("@/lib/supabase/server", () => ({
           return mockSupabase.deleteResponses[table] ?? { error: null };
         },
       }),
+      update: (values: unknown) => ({
+        eq: async (col: string, val: string) => {
+          mockSupabase.updateCalls.push({ table, values, col, val });
+          return mockSupabase.updateResponses[table] ?? { error: null };
+        },
+      }),
       select: (cols: string) => {
         // Consulta pontual de excluirConvite: convites.select("rsvp_id").eq(...).maybeSingle()
         if (table === "convites" && cols === "rsvp_id") {
@@ -36,6 +54,20 @@ vi.mock("@/lib/supabase/server", () => ({
             eq: () => ({
               maybeSingle: async () => mockSupabase.convitesRsvpIdLookup,
             }),
+          };
+        }
+        // Consulta pontual de alterarEmailEReenviar: convites.select("id, nome_principal").eq(...).maybeSingle()
+        if (table === "convites" && cols === "id, nome_principal") {
+          return {
+            eq: () => ({
+              maybeSingle: async () => mockSupabase.convitesLookup,
+            }),
+          };
+        }
+        // Consulta de alterarEmailEReenviar: convidados.select("nome, tipo, token").eq("convite_id", ...)
+        if (table === "convidados" && cols === "nome, tipo, token") {
+          return {
+            eq: async () => mockSupabase.convidadosLookup,
           };
         }
         // Consultas de buscarLinhasRelatorio: awaitable direto, sem encadeamento.
@@ -49,15 +81,29 @@ vi.mock("@/lib/pdf-relatorio", () => ({
   gerarPdfRelatorio: vi.fn(async () => Buffer.from("pdf-fake")),
 }));
 
-import { excluirConvite, gerarRelatorioCsv } from "./actions";
+const emailMocks = vi.hoisted(() => ({
+  enviarEmailReenvioIngressos: vi.fn(async () => undefined),
+}));
+
+vi.mock("@/lib/email", () => ({
+  enviarEmailReenvioIngressos: emailMocks.enviarEmailReenvioIngressos,
+}));
+
+import { excluirConvite, gerarRelatorioCsv, alterarEmailEReenviar } from "./actions";
 
 beforeEach(() => {
   process.env.PAINEL_SENHA = "segredo123";
   estadoCookie.senha = "segredo123";
   mockSupabase.deleteCalls.length = 0;
+  mockSupabase.updateCalls.length = 0;
   mockSupabase.deleteResponses = {};
+  mockSupabase.updateResponses = {};
   mockSupabase.selectResponses = {};
   mockSupabase.convitesRsvpIdLookup = { data: null, error: null };
+  mockSupabase.convitesLookup = { data: null, error: null };
+  mockSupabase.convidadosLookup = { data: null, error: null };
+  emailMocks.enviarEmailReenvioIngressos.mockReset();
+  emailMocks.enviarEmailReenvioIngressos.mockResolvedValue(undefined);
 });
 
 describe("excluirConvite", () => {
@@ -152,5 +198,74 @@ describe("gerarRelatorioCsv (integracao com dados simulados)", () => {
     expect(linhaTitular).toContain("Vegano");
     // O acompanhante nao pode herdar a restricao do titular so por compartilhar o e-mail.
     expect(linhaAcompanhante).not.toContain("Vegano");
+  });
+});
+
+describe("alterarEmailEReenviar", () => {
+  it("recusa quando o cookie da sessao nao bate com PAINEL_SENHA", async () => {
+    estadoCookie.senha = "senha-errada";
+    const resultado = await alterarEmailEReenviar("convite-1", "novo@x.com");
+    expect(resultado.ok).toBe(false);
+    expect(mockSupabase.updateCalls).toHaveLength(0);
+    expect(emailMocks.enviarEmailReenvioIngressos).not.toHaveBeenCalled();
+  });
+
+  it("recusa e-mail em formato invalido", async () => {
+    const resultado = await alterarEmailEReenviar("convite-1", "nao-e-email");
+    expect(resultado.ok).toBe(false);
+    expect(mockSupabase.updateCalls).toHaveLength(0);
+  });
+
+  it("retorna erro quando o convite nao existe", async () => {
+    mockSupabase.convitesLookup = { data: null, error: null };
+    const resultado = await alterarEmailEReenviar("convite-inexistente", "novo@x.com");
+    expect(resultado.ok).toBe(false);
+    expect(mockSupabase.updateCalls).toHaveLength(0);
+  });
+
+  it("retorna erro e nao atualiza nada quando o convite nao tem ingressos vinculados", async () => {
+    mockSupabase.convitesLookup = { data: { id: "convite-1", nome_principal: "Fulano" }, error: null };
+    mockSupabase.convidadosLookup = { data: [], error: null };
+    const resultado = await alterarEmailEReenviar("convite-1", "novo@x.com");
+    expect(resultado.ok).toBe(false);
+    expect(mockSupabase.updateCalls).toHaveLength(0);
+    expect(emailMocks.enviarEmailReenvioIngressos).not.toHaveBeenCalled();
+  });
+
+  it("atualiza o e-mail do convite e reenvia os ingressos ja emitidos, titular primeiro", async () => {
+    mockSupabase.convitesLookup = { data: { id: "convite-1", nome_principal: "Fulano de Tal" }, error: null };
+    mockSupabase.convidadosLookup = {
+      data: [
+        { nome: "Acompanhante", tipo: "acompanhante", token: "tok-2" },
+        { nome: "Fulano de Tal", tipo: "principal", token: "tok-1" },
+      ],
+      error: null,
+    };
+
+    const resultado = await alterarEmailEReenviar("convite-1", "novo@x.com");
+
+    expect(resultado).toEqual({ ok: true, emailEnviado: true });
+    expect(mockSupabase.updateCalls).toEqual([
+      { table: "convites", values: { email: "novo@x.com" }, col: "id", val: "convite-1" },
+    ]);
+    expect(emailMocks.enviarEmailReenvioIngressos).toHaveBeenCalledWith({
+      para: "novo@x.com",
+      nomePrincipal: "Fulano de Tal",
+      ingressos: [
+        { nome: "Fulano de Tal", token: "tok-1", tipo: "principal" },
+        { nome: "Acompanhante", token: "tok-2", tipo: "acompanhante" },
+      ],
+    });
+  });
+
+  it("mantem o e-mail atualizado mas sinaliza emailEnviado:false quando o reenvio falha", async () => {
+    mockSupabase.convitesLookup = { data: { id: "convite-1", nome_principal: "Fulano" }, error: null };
+    mockSupabase.convidadosLookup = { data: [{ nome: "Fulano", tipo: "principal", token: "tok-1" }], error: null };
+    emailMocks.enviarEmailReenvioIngressos.mockRejectedValueOnce(new Error("falhou"));
+
+    const resultado = await alterarEmailEReenviar("convite-1", "novo@x.com");
+
+    expect(resultado).toEqual({ ok: true, emailEnviado: false });
+    expect(mockSupabase.updateCalls).toHaveLength(1);
   });
 });

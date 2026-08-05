@@ -192,6 +192,54 @@ export async function enviarEmailAcompanhantes(params: {
 }
 
 /**
+ * Reenvia o(s) ingresso(s) já emitidos para um novo e-mail, usado quando o e-mail
+ * cadastrado do convidado é alterado no painel (ex.: caixa de entrada comprometida).
+ * Mantém os mesmos tokens/QR já emitidos — só muda o destinatário.
+ */
+export async function enviarEmailReenvioIngressos(params: {
+  para: string;
+  nomePrincipal: string;
+  ingressos: Ingresso[];
+}) {
+  const { para, nomePrincipal, ingressos } = params;
+  const resend = getResendClient();
+
+  const anexos = await Promise.all(
+    ingressos.map((ingresso, i) =>
+      pdfDoIngresso({
+        ...ingresso,
+        tipo: ingresso.tipo ?? (i === 0 ? "principal" : "acompanhante"),
+      }),
+    ),
+  );
+
+  const primeiroNome = nomePrincipal.split(" ")[0];
+  const temMaisDeUm = ingressos.length > 1;
+
+  const corpo = `
+    <h2 style="font-size: 18px; text-align: center; margin: 0 0 24px; font-weight: normal; font-style: italic;">
+      Olá, ${primeiroNome}.
+    </h2>
+    <p style="font-size: 15px; text-align: center; line-height: 1.6; margin: 0 0 16px;">
+      A pedido, atualizamos o e-mail cadastrado do seu convite e reenviamos ${
+        temMaisDeUm ? "seus ingressos" : "seu ingresso"
+      } para este novo endereço.
+    </p>
+    <p style="font-size: 15px; text-align: center; line-height: 1.6; margin: 0 0 24px;">
+      ${temMaisDeUm ? "Os ingressos encontram-se" : "Seu ingresso encontra-se"} em anexo. Solicitamos a gentileza de apresentá-lo(s) na recepção do evento.
+    </p>
+  `;
+
+  return resend.emails.send({
+    from: getRemetente(),
+    to: para,
+    subject: "Seu(s) ingresso(s) reenviado(s) - 50 anos da Carmem Cavalcante",
+    html: layoutEmail(corpo),
+    attachments: anexos,
+  });
+}
+
+/**
  * E-mail enviado após RSVP público.
  */
 export async function enviarEmailRsvpPublico(params: {

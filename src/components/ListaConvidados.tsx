@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import ExcluirConviteButton from "@/components/ExcluirConviteButton";
+import AlterarEmailButton from "@/components/AlterarEmailButton";
 
 type ConvidadoDoConvite = {
   id: string;
@@ -145,7 +146,14 @@ export default function ListaConvidados({
                 })}
               </p>
               {rsvp.convite && (
-                <ExcluirConviteButton conviteId={rsvp.convite.id} nomePrincipal={rsvp.nome} rsvpId={rsvp.id} />
+                <div className="flex items-start gap-2">
+                  <AlterarEmailButton
+                    conviteId={rsvp.convite.id}
+                    nomePrincipal={rsvp.nome}
+                    emailAtual={rsvp.convite.email}
+                  />
+                  <ExcluirConviteButton conviteId={rsvp.convite.id} nomePrincipal={rsvp.nome} rsvpId={rsvp.id} />
+                </div>
               )}
             </div>
           </div>
@@ -175,7 +183,10 @@ export default function ListaConvidados({
                     {c.email}, {c.vagasExtras} vaga(s) extra(s), {c.status === "confirmado" ? "confirmado" : "pendente"}
                   </p>
                 </div>
-                <ExcluirConviteButton conviteId={c.id} nomePrincipal={c.nomePrincipal} />
+                <div className="flex items-start gap-2">
+                  <AlterarEmailButton conviteId={c.id} nomePrincipal={c.nomePrincipal} emailAtual={c.email} />
+                  <ExcluirConviteButton conviteId={c.id} nomePrincipal={c.nomePrincipal} />
+                </div>
               </div>
             ))}
           </div>

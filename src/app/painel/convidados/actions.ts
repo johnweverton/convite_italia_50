@@ -2,8 +2,10 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { getServiceClient } from "@/lib/supabase/server";
 import { gerarPdfRelatorio } from "@/lib/pdf-relatorio";
+import { enviarEmailReenvioIngressos } from "@/lib/email";
 import {
   escaparCsv,
   montarRestricaoPorEmail,
@@ -71,6 +73,82 @@ export async function excluirConvite(conviteId: string, rsvpIdHeuristico?: strin
 
   revalidatePath("/painel/convidados");
   return { ok: true as const };
+}
+
+/**
+ * Corrige o e-mail cadastrado de um convite e reenvia o(s) ingresso(s) já emitidos
+ * (mesmos tokens/QR) para o novo endereço. Exceção operacional aberta mesmo com a
+ * emissão pública de ingressos encerrada — ex.: convidado com a caixa de entrada
+ * antiga comprometida e sem mais acesso a ela.
+ */
+export async function alterarEmailEReenviar(conviteId: string, novoEmail: string) {
+  if (!senhaAutorizada()) {
+    return { ok: false as const, erro: "Não autorizado." };
+  }
+
+  const emailValidado = z.string().trim().email().safeParse(novoEmail);
+  if (!emailValidado.success) {
+    return { ok: false as const, erro: "E-mail inválido." };
+  }
+
+  const supabase = getServiceClient();
+
+  const { data: convite, error: erroConvite } = await supabase
+    .from("convites")
+    .select("id, nome_principal")
+    .eq("id", conviteId)
+    .maybeSingle();
+
+  if (erroConvite || !convite) {
+    console.error("Erro ao buscar convite para alterar e-mail:", erroConvite);
+    return { ok: false as const, erro: "Convite não encontrado." };
+  }
+
+  const { data: convidadosData, error: erroConvidados } = await supabase
+    .from("convidados")
+    .select("nome, tipo, token")
+    .eq("convite_id", conviteId);
+
+  const convidados = (convidadosData ?? []) as Array<{ nome: string; tipo: string; token: string }>;
+
+  if (erroConvidados || convidados.length === 0) {
+    console.error("Erro ao buscar ingressos do convite:", erroConvidados);
+    return { ok: false as const, erro: "Não foi possível localizar os ingressos deste convite." };
+  }
+
+  const { error: erroUpdate } = await supabase
+    .from("convites")
+    .update({ email: emailValidado.data })
+    .eq("id", conviteId);
+
+  if (erroUpdate) {
+    console.error("Erro ao atualizar e-mail do convite:", erroUpdate);
+    return { ok: false as const, erro: "Não foi possível atualizar o e-mail." };
+  }
+
+  // Titular sempre primeiro no e-mail, independente da ordem em que vieram do banco.
+  const ingressosOrdenados = [...convidados].sort((a, b) =>
+    a.tipo === b.tipo ? 0 : a.tipo === "principal" ? -1 : 1,
+  );
+
+  let emailEnviado = true;
+  try {
+    await enviarEmailReenvioIngressos({
+      para: emailValidado.data,
+      nomePrincipal: convite.nome_principal,
+      ingressos: ingressosOrdenados.map((c) => ({
+        nome: c.nome,
+        token: c.token,
+        tipo: c.tipo === "principal" ? "principal" : "acompanhante",
+      })),
+    });
+  } catch (e) {
+    console.error("E-mail do convite atualizado, mas falhou o reenvio dos ingressos:", e);
+    emailEnviado = false;
+  }
+
+  revalidatePath("/painel/convidados");
+  return { ok: true as const, emailEnviado };
 }
 
 /** Busca convidados (com convite/titular) e cruza a restrição alimentar por e-mail, usado pelo CSV e pelo PDF. */
